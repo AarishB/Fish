@@ -1,0 +1,13 @@
+{
+  "name": "fish",
+  "private": true,
+  "workspaces": ["shared", "client", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
+    "test": "npm run test -w shared"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
