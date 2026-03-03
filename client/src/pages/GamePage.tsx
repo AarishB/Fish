@@ -133,21 +133,10 @@ export default function GamePage() {
           ))}
         </div>
 
-        {/* Middle: set trophies + event log */}
-        <div className="flex-1 flex items-center justify-center px-8 py-2">
-          <div className="flex-1 max-w-md flex flex-col gap-4">
-            <div className="bg-black/20 rounded-2xl p-4 shadow-table">
-              <div className="text-xs text-gray-400 uppercase tracking-wide text-center mb-3">Sets</div>
-              <SetTrophies claimedSets={gameView.claimedSets} />
-            </div>
-            <EventLog entries={eventLog} players={gameView.players} />
-          </div>
-        </div>
-
-        {/* Bottom: left teammate | local player + hand + buttons | right teammate */}
-        <div className="pb-6 px-4">
-          <div className="flex items-end justify-center gap-8">
-            {/* Left teammate */}
+        {/* Middle: left teammate | set trophies + event log | right teammate */}
+        <div className="flex-1 flex items-center justify-center gap-6 px-8 py-2">
+          {/* Left teammate — fixed width so center stays centered */}
+          <div className="w-52 flex justify-end">
             {teammates[0] && (
               <PlayerSeat
                 player={teammates[0]}
@@ -156,7 +145,32 @@ export default function GamePage() {
                 position="left"
               />
             )}
+          </div>
 
+          <div className="flex-1 max-w-md flex flex-col gap-4">
+            <div className="bg-black/20 rounded-2xl p-4 shadow-table">
+              <div className="text-xs text-gray-400 uppercase tracking-wide text-center mb-3">Sets</div>
+              <SetTrophies claimedSets={gameView.claimedSets} />
+            </div>
+            <EventLog entries={eventLog} players={gameView.players} />
+          </div>
+
+          {/* Right teammate — fixed width so center stays centered */}
+          <div className="w-52 flex justify-start">
+            {teammates[1] && (
+              <PlayerSeat
+                player={teammates[1]}
+                isCurrentTurn={gameView.currentTurnPlayerId === teammates[1].id}
+                isLocalPlayer={false}
+                position="right"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: local player + hand + buttons */}
+        <div className="pb-6 px-4">
+          <div className="flex items-end justify-center">
             {/* Me + hand + buttons */}
             {myPlayer && (
               <div className="flex flex-col items-center gap-4">
@@ -234,16 +248,6 @@ export default function GamePage() {
                   </button>
                 </div>
               </div>
-            )}
-
-            {/* Right teammate */}
-            {teammates[1] && (
-              <PlayerSeat
-                player={teammates[1]}
-                isCurrentTurn={gameView.currentTurnPlayerId === teammates[1].id}
-                isLocalPlayer={false}
-                position="right"
-              />
             )}
           </div>
         </div>

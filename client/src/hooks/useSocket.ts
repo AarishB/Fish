@@ -101,7 +101,7 @@ export function useSocket() {
       const askerName = players.find(p => p.id === action.askingPlayerId)?.name ?? 'Someone';
       const targetName = players.find(p => p.id === action.targetPlayerId)?.name ?? 'Someone';
       store.setAskAnnouncement({ cardId: action.cardId, askerPlayerId: action.askingPlayerId, targetPlayerId: action.targetPlayerId, askerName, targetName, success: result.success });
-      setTimeout(() => store.setAskAnnouncement(null), 3200);
+      setTimeout(() => store.setAskAnnouncement(null), 6000);
 
       if (result.success) {
         store.setFlyingCard({

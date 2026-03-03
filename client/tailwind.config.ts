@@ -14,13 +14,13 @@ export default {
         teamBLight: '#FCA5A5',
         cardFace: '#FEFCE8',
         hearts: '#DC2626',
-        diamonds: '#DC2626',
-        clubs: '#1E293B',
+        diamonds: '#D97706',
+        clubs: '#16A34A',
         spades: '#1E293B',
         gold: '#F59E0B',
       },
       fontFamily: {
-        card: ['"Playfair Display"', 'serif'],
+        card: ['Oswald', 'sans-serif'],
         ui: ['Inter', 'sans-serif'],
       },
       boxShadow: {

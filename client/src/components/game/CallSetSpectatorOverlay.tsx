@@ -94,7 +94,7 @@ export function CallSetSpectatorOverlay({ progress }: Props) {
                             : 'border-gray-700 bg-gray-800/50'
                         }`}
                       >
-                        <Card cardId={cardId} size="sm" />
+                        <Card cardId={cardId} size="xs" />
                         <AnimatePresence mode="wait">
                           {assignedPlayer ? (
                             <motion.span

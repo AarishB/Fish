@@ -25,4 +25,21 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.2) transparent;
   }
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar {
+    height: 2px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12);
+    border-radius: 999px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.25);
+  }
 }

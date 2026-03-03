@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
+import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
+import { CARD_BACK_DEFS } from '../cardBackDefs';
 import { Button } from '../components/ui/Button';
 import type { GameDifficulty } from 'shared';
 
@@ -45,7 +47,16 @@ const DIFFICULTY_OPTIONS: DifficultyOption[] = [
   },
 ];
 
-const SUIT_FLOATERS = ['♠', '♥', '♦', '♣', '♠', '♥', '♦', '♣', '♠', '♥'];
+const SUITS = ['♠', '♥', '♦', '♣'];
+const SUIT_FLOATERS = Array.from({ length: 160 }, (_, i) => SUITS[i % 4]);
+// Aesthetic directions only: up, down, left, right, and the 4 diagonals
+const AESTHETIC_ANGLES = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2, Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
+const FLOATER_DIRS = Array.from({ length: 160 }, () => {
+  const angle = AESTHETIC_ANGLES[Math.floor(Math.random() * AESTHETIC_ANGLES.length)];
+  return { x: Math.cos(angle), y: Math.sin(angle) };
+});
+// Negative delay = start mid-cycle so icons are spread out across the screen immediately
+const FLOATER_DELAYS = Array.from({ length: 160 }, () => -(Math.random() * 30));
 
 const HOW_TO_PLAY = [
   { q: 'What is the goal?', a: 'Claim the most sets. First team to 5 wins (out of 9 total sets).' },
@@ -69,6 +80,7 @@ export default function LandingPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState<string | null>(null);
   const setMyIdentity = useGameStore(s => s.setMyIdentity);
+  const { cardBack, setCardBack } = useSettingsStore();
   const myPlayerName = useGameStore(s => s.myPlayerName);
 
   function handleCreate(e: React.FormEvent) {
@@ -114,9 +126,19 @@ export default function LandingPage() {
             className={`absolute text-4xl select-none opacity-5 ${
               suit === '♥' || suit === '♦' ? 'text-red-400' : 'text-gray-400'
             }`}
-            style={{ left: `${10 + (i * 9) % 90}%`, top: `${(i * 17) % 90}%` }}
-            animate={{ y: [-10, 10, -10], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 4 + i * 0.7, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ left: `${(i * 13 + i * i * 7) % 95}%`, top: `${(i * 11 + i * i * 3) % 95}%` }}
+            animate={{
+              x: [-2000 * FLOATER_DIRS[i].x, -2000 * FLOATER_DIRS[i].x, 2000 * FLOATER_DIRS[i].x, 2000 * FLOATER_DIRS[i].x],
+              y: [-2000 * FLOATER_DIRS[i].y, -2000 * FLOATER_DIRS[i].y, 2000 * FLOATER_DIRS[i].y, 2000 * FLOATER_DIRS[i].y],
+            }}
+            transition={{
+              duration: 60,
+              times: [0, 0.05, 0.95, 1],
+              repeat: Infinity,
+              repeatType: 'loop',
+              ease: 'linear',
+              delay: FLOATER_DELAYS[i],
+            }}
           >
             {suit}
           </motion.div>
@@ -302,6 +324,43 @@ export default function LandingPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+              </div>
+
+              {/* Card back selector */}
+              <div className="border border-gray-700 rounded-xl p-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Card Design</p>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-subtle">
+                  {Object.entries(CARD_BACK_DEFS).map(([id, def]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={def.locked}
+                      onClick={() => { if (!def.locked) setCardBack(id as CardBack); }}
+                      className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+                    >
+                      <div
+                        className={`relative w-10 h-14 rounded-lg border-2 overflow-hidden flex items-center justify-center transition-all
+                          ${def.locked ? 'opacity-40' : ''}
+                          ${!def.locked && cardBack === id ? `${def.borderColor} ring-2 ring-offset-2 ring-offset-gray-900 ring-white/30 scale-110` : 'border-gray-600'}
+                          ${!def.locked ? 'group-hover:border-gray-400' : ''}
+                        `}
+                        style={def.container}
+                      >
+                        <div className="absolute inset-0" style={def.pattern} />
+                        <div className="absolute inset-[2px] rounded border border-white/10 pointer-events-none" />
+                        <span className={`relative z-10 ${def.symbolColor} opacity-70 text-base`}>✦</span>
+                        {def.locked && (
+                          <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg">
+                            <span className="text-xs">🔒</span>
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-xs ${!def.locked && cardBack === id ? 'text-white' : 'text-gray-500'} transition-colors`}>
+                        {def.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex gap-3">

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { PlayerInfo } from 'shared';
 import { useGameStore } from '../../store/useGameStore';
+import { Card } from '../cards/Card';
 
 interface PlayerSeatProps {
   player: PlayerInfo;
@@ -80,7 +81,39 @@ export function PlayerSeat({
         />
       )}
 
-      <Avatar player={player} />
+      {/* Cards above avatar for opponents (top) */}
+      {!isLocalPlayer && position === 'top' && player.cardCount > 0 && (
+        <div className="flex items-center">
+          {Array.from({ length: player.cardCount }, (_, i) => (
+            <div key={i} style={{ marginLeft: i === 0 ? 0 : -30, zIndex: player.cardCount - i }}>
+              <Card cardId="HEARTS_2" faceDown size="xs" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Avatar + side card stack for left/right teammates */}
+      <div className="flex items-center gap-1">
+        {!isLocalPlayer && position === 'left' && player.cardCount > 0 && (
+          <div className="flex items-center">
+            {Array.from({ length: player.cardCount }, (_, i) => (
+              <div key={i} style={{ marginLeft: i === 0 ? 0 : -30, zIndex: player.cardCount - i }}>
+                <Card cardId="HEARTS_2" faceDown size="xs" />
+              </div>
+            ))}
+          </div>
+        )}
+        <Avatar player={player} />
+        {!isLocalPlayer && position === 'right' && player.cardCount > 0 && (
+          <div className="flex items-center">
+            {Array.from({ length: player.cardCount }, (_, i) => (
+              <div key={i} style={{ marginLeft: i === 0 ? 0 : -30, zIndex: player.cardCount - i }}>
+                <Card cardId="HEARTS_2" faceDown size="xs" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="text-center">
         <div className="text-xs font-semibold text-white truncate max-w-[80px]">

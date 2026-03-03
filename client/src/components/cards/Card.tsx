@@ -1,4 +1,8 @@
 import { motion } from 'framer-motion';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { CARD_BACK_DEFS } from '../../cardBackDefs';
+
+type JokerVariant = 'red' | 'black' | null;
 
 const SUIT_SYMBOLS: Record<string, string> = {
   hearts: '♥',
@@ -8,20 +12,19 @@ const SUIT_SYMBOLS: Record<string, string> = {
 };
 
 const SUIT_COLORS: Record<string, string> = {
-  hearts: 'text-hearts',
-  diamonds: 'text-diamonds',
-  clubs: 'text-clubs',
-  spades: 'text-spades',
+  hearts: 'text-red-600',
+  diamonds: 'text-amber-500',
+  clubs: 'text-green-700',
+  spades: 'text-slate-800',
 };
 
-function parseCardId(cardId: string): { rank: string; suit: string; isJoker: boolean } {
-  if (cardId === 'JOKER_1' || cardId === 'JOKER_2') {
-    return { rank: 'J', suit: 'joker', isJoker: true };
-  }
+function parseCardId(cardId: string): { rank: string; suit: string; isJoker: boolean; jokerVariant: JokerVariant } {
+  if (cardId === 'JOKER_1') return { rank: 'J', suit: 'joker', isJoker: true, jokerVariant: 'red' };
+  if (cardId === 'JOKER_2') return { rank: 'J', suit: 'joker', isJoker: true, jokerVariant: 'black' };
   const parts = cardId.split('_');
   const suit = parts[0];
   const rank = parts.slice(1).join('_');
-  return { rank, suit, isJoker: false };
+  return { rank, suit, isJoker: false, jokerVariant: null };
 }
 
 interface CardProps {
@@ -43,6 +46,44 @@ const sizeClasses = {
   xl: 'w-36 h-52 text-2xl',
 };
 
+const rankTextClasses = {
+  xs: 'text-lg',
+  sm: 'text-2xl',
+  md: 'text-4xl',
+  lg: 'text-5xl',
+  xl: 'text-6xl',
+};
+
+const suitTextClasses = {
+  xs: 'text-xs',
+  sm: 'text-sm',
+  md: 'text-lg',
+  lg: 'text-xl',
+  xl: 'text-2xl',
+};
+
+// Derive joker-specific styles so the Card function stays below complexity limit
+function jokerBg(variant: JokerVariant): string {
+  if (variant === 'red') return 'bg-gradient-to-br from-red-50 to-red-100';
+  if (variant === 'black') return 'bg-gradient-to-br from-gray-100 to-gray-200';
+  return '';
+}
+function jokerColor(variant: JokerVariant): string {
+  if (variant === 'red') return 'text-red-600';
+  if (variant === 'black') return 'text-gray-800';
+  return 'text-purple-600';
+}
+function jokerLabelColor(variant: JokerVariant): string {
+  if (variant === 'red') return 'text-red-400';
+  if (variant === 'black') return 'text-gray-500';
+  return 'text-purple-400';
+}
+function cursorClass(disabled: boolean, hasClick: boolean): string {
+  if (disabled) return 'opacity-50 cursor-not-allowed';
+  if (hasClick) return 'cursor-pointer hover:shadow-card-hover';
+  return 'cursor-default';
+}
+
 export function Card({
   cardId,
   selected = false,
@@ -51,73 +92,74 @@ export function Card({
   size = 'md',
   faceDown = false,
   className = '',
-  animate = true,
-}: CardProps) {
-  const { rank, suit, isJoker } = parseCardId(cardId);
+  animate: _animate = true,
+}: Readonly<CardProps>) {
+  const { rank, suit, isJoker, jokerVariant } = parseCardId(cardId);
   const suitSymbol = isJoker ? '🃏' : SUIT_SYMBOLS[suit];
-  const suitColor = isJoker ? 'text-purple-600' : SUIT_COLORS[suit];
+  const suitColor = isJoker ? jokerColor(jokerVariant) : SUIT_COLORS[suit];
   const displayRank = rank === '10' ? '10' : rank;
+  const hoverProps = disabled || !onClick ? {} : { y: -8, scale: 1.05 };
+  const tapProps = disabled || !onClick ? {} : { scale: 0.97 };
+  const cardBack = useSettingsStore(s => s.cardBack);
+  const back = CARD_BACK_DEFS[cardBack] ?? CARD_BACK_DEFS['blue'];
 
   if (faceDown) {
+    const faceDownHover = disabled || !onClick ? {} : { y: -4 };
     return (
       <motion.div
-        whileHover={!disabled && onClick ? { y: -4 } : {}}
-        className={`
-          ${sizeClasses[size]} rounded-xl border-2 border-gray-600
-          bg-gradient-to-br from-blue-900 to-blue-700
-          flex items-center justify-center select-none
-          ${className}
-        `}
+        whileHover={faceDownHover}
+        className={`${sizeClasses[size]} rounded-xl border-2 ${back.borderColor} relative overflow-hidden select-none flex items-center justify-center ${className}`}
+        style={back.container}
       >
-        <span className="text-blue-400 opacity-50 text-2xl">✦</span>
+        {/* Texture pattern overlay */}
+        <div className="absolute inset-0" style={back.pattern} />
+        {/* Inner border frame */}
+        <div className="absolute inset-[3px] rounded-lg border border-white/10 pointer-events-none" />
+        {/* Center symbol */}
+        <span className={`relative z-10 ${back.symbolColor} opacity-60 text-xl`}>✦</span>
       </motion.div>
     );
   }
 
+  const selectedClass = selected
+    ? 'border-gold shadow-[0_0_12px_2px_rgba(245,158,11,0.6)] -translate-y-3'
+    : 'border-gray-200';
+
   return (
     <motion.div
-      whileHover={!disabled && onClick ? { y: -8, scale: 1.05 } : {}}
-      whileTap={!disabled && onClick ? { scale: 0.97 } : {}}
-      onClick={!disabled ? onClick : undefined}
+      whileHover={hoverProps}
+      whileTap={tapProps}
+      onClick={disabled ? undefined : onClick}
       className={`
         ${sizeClasses[size]}
         relative rounded-xl border-2 bg-cardFace select-none font-card
         flex flex-col justify-between p-1
         shadow-card transition-shadow duration-150
-        ${selected
-          ? 'border-gold shadow-[0_0_12px_2px_rgba(245,158,11,0.6)] -translate-y-3'
-          : 'border-gray-200'
-        }
-        ${disabled ? 'opacity-50 cursor-not-allowed' : onClick ? 'cursor-pointer hover:shadow-card-hover' : 'cursor-default'}
-        ${isJoker ? 'bg-gradient-to-br from-purple-50 to-purple-100' : ''}
+        ${selectedClass}
+        ${cursorClass(disabled, !!onClick)}
+        ${isJoker ? jokerBg(jokerVariant) : ''}
         ${className}
       `}
     >
-      {/* Top-left rank + suit */}
-      <div className={`${suitColor} leading-none`}>
-        <div className="font-bold text-xs leading-tight">{displayRank}</div>
-        <div className="text-xs">{suitSymbol}</div>
+      <div className={`${suitColor} leading-none display-flex flex-col items-center`}>
+        <div className={`font-bold ${rankTextClasses[size]} leading-tight text-center`}>{displayRank}</div>
       </div>
-
-      {/* Center suit symbol */}
-      <div className={`${suitColor} text-center text-lg font-bold`}>
+      <div className={`${suitColor} text-center ${suitTextClasses[size]} font-bold`}>
         {isJoker ? '🃏' : suitSymbol}
       </div>
-
-      {/* Bottom-right rank + suit (rotated) */}
-      <div className={`${suitColor} leading-none rotate-180`}>
+      {/* <div className={`${suitColor} leading-none rotate-180`}>
         <div className="font-bold text-xs leading-tight">{displayRank}</div>
         <div className="text-xs">{suitSymbol}</div>
-      </div>
+      </div> */}
     </motion.div>
   );
 }
 
 // Compact inline card label for text (e.g. in logs and modals)
-export function CardLabel({ cardId }: { cardId: string }) {
-  const { rank, suit, isJoker } = parseCardId(cardId);
+export function CardLabel({ cardId }: Readonly<{ cardId: string }>) {
+  const { rank, suit, isJoker, jokerVariant } = parseCardId(cardId);
   const suitSymbol = isJoker ? '🃏' : SUIT_SYMBOLS[suit];
-  const suitColor = isJoker ? 'text-purple-400' : SUIT_COLORS[suit];
+  const suitColor = isJoker ? jokerLabelColor(jokerVariant) : SUIT_COLORS[suit];
   const suitName = isJoker ? '' : suit.charAt(0).toUpperCase() + suit.slice(1);
 
   return (

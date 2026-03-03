@@ -573,10 +573,14 @@ export function processAsk(
   const { newState, result } = applyAsk(room.game, action);
   room.game = newState;
 
-  // Update all bot inference tables
+  // Update all bot inference tables (memory rate varies by difficulty)
   const lastAsk = newState.askHistory[newState.askHistory.length - 1];
+  const memoryRates: Record<string, number> = { easy: 0.8, normal: 0.9, hard: 1 };
+  const memoryRate = memoryRates[room.lobby.difficulty] ?? 0.9;
   for (const [, botState] of room.botStates) {
-    updateBotState(botState, lastAsk, newState);
+    if (Math.random() < memoryRate) {
+      updateBotState(botState, lastAsk, newState);
+    }
   }
 
   // Broadcast result to all (public info: who asked whom for what, and success/fail)
@@ -602,10 +606,13 @@ export function processAsk(
   // Check if bots want to counter-set
   checkBotCounterSet(io, roomCode);
 
-  // Schedule bot turn if needed
+  // Schedule bot turn if needed.
+  // - Correct ask: bot keeps turn; give extra breathing room after the card travel animation (4800ms)
+  // - Wrong ask: just clear the overlay (3600ms)
   const nextPlayer = newState.players.find(p => p.id === newState.currentTurnPlayerId);
   if (nextPlayer?.isBot) {
-    scheduleBotTurn(io, roomCode, nextPlayer.id);
+    const minDelay = result.cardTransferred ? 4800 : 3600;
+    scheduleBotTurn(io, roomCode, nextPlayer.id, minDelay);
   }
 }
 
@@ -709,8 +716,8 @@ function handleZeroCardTurn(io: Server, roomCode: string, state: GameState): voi
 
   const turnPlayer = state.players.find(p => p.id === state.currentTurnPlayerId);
   if (!turnPlayer || turnPlayer.cardCount > 0) {
-    // Normal case — schedule bot if needed
-    if (turnPlayer?.isBot) scheduleBotTurn(io, roomCode, turnPlayer.id);
+    // Normal case — wait past the call-set result overlay (4500ms) before bot acts
+    if (turnPlayer?.isBot) scheduleBotTurn(io, roomCode, turnPlayer.id, 4700);
     return;
   }
 
@@ -729,7 +736,7 @@ function handleZeroCardTurn(io: Server, roomCode: string, state: GameState): voi
     const next = eligible[0];
     room.game = { ...room.game!, currentTurnPlayerId: next.id };
     io.to(roomCode).emit('turn_updated', { newTurnPlayerId: next.id });
-    if (next.isBot) scheduleBotTurn(io, roomCode, next.id);
+    if (next.isBot) scheduleBotTurn(io, roomCode, next.id, 4700);
     return;
   }
 

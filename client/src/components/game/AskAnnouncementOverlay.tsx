@@ -83,16 +83,20 @@ function CardTravelOverlay({ cardId, askerPlayerId, targetPlayerId }: Readonly<{
       await animate(scope.current, { rotateY: 0 }, { duration: 0.35, ease: 'easeOut' });
       if (cancelled) return;
 
-      // 3. Zoom to center (full size) — everyone sees the card
-      await animate(scope.current, { x: 0, y: 0, scale: 1 }, { duration: 0.4, ease: 'easeOut' });
+      // 3. Zoom to center (slightly below, so text above stays readable)
+      await animate(scope.current, { x: 0, y: 80, scale: 1 }, { duration: 0.4, ease: 'easeOut' });
+      if (cancelled) return;
+
+      // 3b. Hold at center so everyone can read the card
+      await new Promise<void>(r => setTimeout(r, 1200));
       if (cancelled) return;
 
       // 4. Spin + glide to asker's seat, zooming back small
       await animate(scope.current, { x: ax, y: ay, scale: 0.3, rotate: 720 }, { duration: 0.8, ease: 'easeInOut' });
       if (cancelled) return;
 
-      // 5. Brief pause — card shown face-up next to asker's hand
-      await new Promise<void>(r => setTimeout(r, 150));
+      // 5. Pause — card shown face-up next to asker's hand
+      await new Promise<void>(r => setTimeout(r, 2000));
       if (cancelled) return;
 
       // 6. Flip face-down — card joins asker's hidden hand
@@ -108,8 +112,10 @@ function CardTravelOverlay({ cardId, askerPlayerId, targetPlayerId }: Readonly<{
       className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
       style={{ perspective: 1200 }}
     >
-      <motion.div ref={scope}>
-        <Card cardId={cardId} size="xl" />
+      <motion.div ref={scope} style={{ transformOrigin: 'center' }}>
+        <div style={{ transform: 'scale(3)', transformOrigin: 'center' }}>
+          <Card cardId={cardId} size="md" className="!justify-center gap-3" />
+        </div>
       </motion.div>
     </div>
   );
@@ -163,7 +169,7 @@ export function AskAnnouncementOverlay({ announcement }: Props) {
                   className={`drop-shadow-2xl ring-4 ring-offset-4 ring-offset-transparent rounded-2xl
                     ring-red-500`}
                 >
-                  <Card cardId={announcement.cardId} size="xl" />
+                  <Card cardId={announcement.cardId} size="xl" className="!justify-center gap-3" />
                 </motion.div>
               )}
             </motion.div>
