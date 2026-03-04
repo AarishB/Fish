@@ -7,10 +7,8 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "outDir": "dist",
-    "paths": {
-      "shared": ["../shared/src/index.ts"]
-    }
+    "rootDir": "src"
   },
-  "include": ["src", "../shared/src"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }
