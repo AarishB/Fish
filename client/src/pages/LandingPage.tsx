@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '../socket';
+
+function emitWhenConnected(event: string, data: Record<string, unknown>) {
+  if (socket.connected) {
+    socket.emit(event, data);
+  } else {
+    socket.once('connect', () => socket.emit(event, data));
+    socket.connect();
+  }
+}
 import { useGameStore } from '../store/useGameStore';
 import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
 import { CARD_BACK_DEFS } from '../cardBackDefs';
@@ -90,7 +99,7 @@ export default function LandingPage() {
     if (!count || count < 4 || count > 14) return;
     setMyIdentity(socket.id ?? '', playerName.trim());
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    socket.emit('create_room', { playerName: playerName.trim(), playerCount: count, difficulty });
+    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty });
   }
 
   function handleSelectPreset(n: number) {
@@ -113,7 +122,7 @@ export default function LandingPage() {
     e.preventDefault();
     if (!playerName.trim() || !roomCode.trim()) return;
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    socket.emit('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase() });
+    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase() });
   }
 
   return (
