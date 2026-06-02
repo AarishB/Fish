@@ -64,12 +64,13 @@ export function updateBotState(botState: BotState, record: AskRecord, gameState:
     // Target does NOT have this card
     const loc = botState.cardLocations.get(cardId);
     if (loc && !loc.known) {
-      loc.eliminatedHolders.add(targetPlayerId);
-      loc.possibleHolders.delete(targetPlayerId);
+      const unknownLoc = loc as { known: false; possibleHolders: Set<PlayerId>; eliminatedHolders: Set<PlayerId> };
+      unknownLoc.eliminatedHolders.add(targetPlayerId);
+      unknownLoc.possibleHolders.delete(targetPlayerId);
 
       // If only 1 possible holder left, it's known
-      if (loc.possibleHolders.size === 1) {
-        const [holder] = loc.possibleHolders;
+      if (unknownLoc.possibleHolders.size === 1) {
+        const [holder] = unknownLoc.possibleHolders;
         botState.cardLocations.set(cardId, { known: true, holder });
       }
     }
@@ -144,9 +145,10 @@ export function chooseAsk(
         }
       } else {
         // Filter possible holders to only opponents
-        const possibleOpponents = [...loc.possibleHolders].filter(id => opponents.includes(id));
+        const unknownLoc = loc as { known: false; possibleHolders: Set<PlayerId>; eliminatedHolders: Set<PlayerId> };
+        const possibleOpponents = [...unknownLoc.possibleHolders].filter(id => opponents.includes(id));
         if (possibleOpponents.length > 0) {
-          const certainty = 1 / loc.possibleHolders.size;
+          const certainty = 1 / unknownLoc.possibleHolders.size;
           const target = possibleOpponents[Math.floor(Math.random() * possibleOpponents.length)];
           askableCards.push({ cardId, certainty, targetPlayerId: target });
         }

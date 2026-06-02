@@ -758,11 +758,11 @@ function sendHandUpdate(io: Server, room: ReturnType<typeof getRoom>, playerId: 
 function countTeamCardsInUnclaimedSets(state: GameState): { cardsA: number; cardsB: number } {
   // Build cardId → teamId lookup from all player hands
   const cardTeam = new Map<string, TeamId>();
-  for (const [pid, hand] of Object.entries(state.hands)) {
+  for (const [pid, hand] of Object.entries(state.hands) as [string, string[]][]) {
     const teamId = state.players.find(p => p.id === pid)?.teamId;
-    if (teamId) hand.forEach(c => cardTeam.set(c, teamId));
+    if (teamId) hand.forEach((c: string) => cardTeam.set(c, teamId));
   }
-  const unclaimedSetIds = ALL_SET_IDS.filter(sid => !state.claimedSets.some(cs => cs.setId === sid));
+  const unclaimedSetIds = ALL_SET_IDS.filter((sid: string) => !state.claimedSets.some((cs: { setId: string }) => cs.setId === sid));
   let cardsA = 0;
   let cardsB = 0;
   for (const sid of unclaimedSetIds) {
