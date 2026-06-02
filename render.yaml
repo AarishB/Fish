@@ -2,6 +2,7 @@ services:
   - type: web
     name: fish-server
     runtime: node
+    rootDir: "."
     buildCommand: npm install --include=dev && npm run build -w shared && npm run build -w server
     startCommand: npm run start -w server
     healthCheckPath: /health
