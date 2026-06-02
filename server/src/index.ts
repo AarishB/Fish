@@ -5,13 +5,17 @@ import { app } from './app';
 import { registerSocketHandlers } from './socketHandler';
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'https://www.fishcardgame.com',
+  'https://fish-client-couxs76n1-aarishbs-projects.vercel.app',
+];
 
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: CLIENT_URL,
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   },
 });
@@ -20,5 +24,5 @@ registerSocketHandlers(io);
 
 httpServer.listen(PORT, () => {
   console.log(`Fish server running on port ${PORT}`);
-  console.log(`Accepting connections from ${CLIENT_URL}`);
+  console.log(`Accepting connections from: ${ALLOWED_ORIGINS.join(', ')}`);
 });

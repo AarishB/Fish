@@ -4,8 +4,14 @@ import path from 'node:path';
 
 export const app = express();
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'https://www.fishcardgame.com',
+  'https://fish-client-couxs76n1-aarishbs-projects.vercel.app',
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: ALLOWED_ORIGINS,
   credentials: true,
 }));
 
