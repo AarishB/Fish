@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useSocket } from './hooks/useSocket';
 import LandingPage from './pages/LandingPage';
@@ -22,6 +23,13 @@ function AppInner() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetch('https://fish-d9st.onrender.com/health').catch(() => {});
+    }, 10 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <BrowserRouter>
       <AppInner />
