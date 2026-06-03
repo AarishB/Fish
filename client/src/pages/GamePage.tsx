@@ -144,6 +144,8 @@ export default function GamePage() {
               isCurrentTurn={gameView.currentTurnPlayerId === player.id}
               isLocalPlayer={false}
               position="top"
+              isSelectable={isMyTurn}
+              onSelect={(id) => openAskModal(undefined, id)}
             />
           ))}
         </div>

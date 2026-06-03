@@ -46,6 +46,7 @@ interface GameStore {
   // Modal open states
   askModalOpen: boolean;
   askModalInitialCardId: string | null;
+  askModalInitialTargetId: string | null;
   callSetModalOpen: boolean;
   counterSetModalOpen: boolean;
   revealModalOpen: boolean;
@@ -98,7 +99,7 @@ interface GameStore {
   setRevealCredits: (n: number) => void;
   setRevealedAsks: (asks: AskRecord[]) => void;
 
-  openAskModal: (initialCardId?: string) => void;
+  openAskModal: (initialCardId?: string, initialTargetId?: string) => void;
   closeAskModal: () => void;
   openCallSetModal: () => void;
   closeCallSetModal: () => void;
@@ -139,6 +140,7 @@ export const useGameStore = create<GameStore>((set) => ({
   toasts: [],
   askModalOpen: false,
   askModalInitialCardId: null,
+  askModalInitialTargetId: null,
   callSetModalOpen: false,
   counterSetModalOpen: false,
   revealModalOpen: false,
@@ -195,9 +197,9 @@ export const useGameStore = create<GameStore>((set) => ({
   setRevealCredits: (n) => set({ revealCredits: n }),
   setRevealedAsks: (asks) => set({ revealedAsks: asks }),
 
-  openAskModal: (initialCardId) =>
-    set({ askModalOpen: true, askModalInitialCardId: initialCardId ?? null }),
-  closeAskModal: () => set({ askModalOpen: false, askModalInitialCardId: null }),
+  openAskModal: (initialCardId, initialTargetId) =>
+    set({ askModalOpen: true, askModalInitialCardId: initialCardId ?? null, askModalInitialTargetId: initialTargetId ?? null }),
+  closeAskModal: () => set({ askModalOpen: false, askModalInitialCardId: null, askModalInitialTargetId: null }),
   openCallSetModal: () => set({ callSetModalOpen: true }),
   closeCallSetModal: () => set({ callSetModalOpen: false }),
   openCounterSetModal: () => set({ counterSetModalOpen: true }),

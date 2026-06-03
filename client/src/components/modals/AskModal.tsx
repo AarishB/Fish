@@ -24,6 +24,7 @@ export function AskModal({ open, onClose }: AskModalProps) {
   const myPlayerId = useGameStore(s => s.myPlayerId);
   const roomCode = useGameStore(s => s.roomCode);
   const initialCardId = useGameStore(s => s.askModalInitialCardId);
+  const initialTargetId = useGameStore(s => s.askModalInitialTargetId);
 
   const [step, setStep] = useState<Step>('set');
   const [selectedSet, setSelectedSet] = useState<SetId | null>(null);
@@ -44,13 +45,14 @@ export function AskModal({ open, onClose }: AskModalProps) {
       setSelectedCard(null);
       setSelectedTarget(null);
     }
-  }, [open, initialCardId]);
+  }, [open, initialCardId, initialTargetId]);
 
   if (!gameView || !myPlayerId) return null;
 
   const myHand = gameView.myHand;
   const myPlayer = gameView.players.find(p => p.id === myPlayerId);
   const eligibleSets = getEligibleSets(myHand);
+  const preSelectedTarget = initialTargetId ? gameView.players.find(p => p.id === initialTargetId) ?? null : null;
 
   const opponents = gameView.players.filter(
     p => p.teamId !== myPlayer?.teamId && p.cardCount > 0
@@ -75,6 +77,19 @@ export function AskModal({ open, onClose }: AskModalProps) {
 
   return (
     <Modal open={open} onClose={onClose} title="Ask for a Card" maxWidth="max-w-xl">
+      {/* Pre-selected target banner */}
+      {preSelectedTarget && (
+        <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border
+            ${preSelectedTarget.teamId === 'A' ? 'bg-teamA/20 text-teamALight border-teamA' : 'bg-teamB/20 text-teamBLight border-teamB'}`}>
+            {preSelectedTarget.isBot ? '🤖' : preSelectedTarget.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div className="text-sm text-gray-300">
+            Asking <span className="font-bold text-white">{preSelectedTarget.name}</span> — pick a card
+          </div>
+        </div>
+      )}
+
       {/* Progress indicator */}
       <div className="flex items-center gap-2 mb-6">
         {stepLabels.map((s, i) => (
@@ -123,8 +138,13 @@ export function AskModal({ open, onClose }: AskModalProps) {
                     selected={selectedCard === cardId}
                     disabled={alreadyHave}
                     onClick={alreadyHave ? undefined : () => {
-                      setSelectedCard(cardId);
-                      setStep('target');
+                      if (preSelectedTarget && roomCode) {
+                        socket.emit('ask', { roomCode, targetPlayerId: preSelectedTarget.id, cardId });
+                        onClose();
+                      } else {
+                        setSelectedCard(cardId);
+                        setStep('target');
+                      }
                     }}
                     size="sm"
                   />
