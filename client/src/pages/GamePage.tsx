@@ -6,7 +6,7 @@ import { CardHand } from '../components/cards/CardHand';
 import { PlayerSeat } from '../components/players/PlayerSeat';
 import { TeamScorePanel } from '../components/game/TeamScorePanel';
 import { SetTrophies } from '../components/game/SetTrophies';
-import { EventLog, buildSetClaimedEntry } from '../components/game/EventLog';
+import { EventLog, buildSetClaimedEntry, cardLabel } from '../components/game/EventLog';
 import { AskModal } from '../components/modals/AskModal';
 import { CallSetModal } from '../components/modals/CallSetModal';
 import { CounterSetModal } from '../components/modals/CounterSetModal';
@@ -34,6 +34,7 @@ export default function GamePage() {
   const closeCounterSetModal = useGameStore(s => s.closeCounterSetModal);
   const closeRevealModal = useGameStore(s => s.closeRevealModal);
   const askAnnouncement = useGameStore(s => s.askAnnouncement);
+  const setAskAnnouncement = useGameStore(s => s.setAskAnnouncement);
   const callSetProgress = useGameStore(s => s.callSetProgress);
   const callSetResultAnim = useGameStore(s => s.callSetResultAnim);
   const endGameVotes = useGameStore(s => s.endGameVotes);
@@ -53,6 +54,20 @@ export default function GamePage() {
       setPrevClaimedCount(gameView.claimedSets.length);
     }
   }, [gameView?.claimedSets]);
+
+  // Show last ask in event log — replaces previous ask entry on every new ask
+  useEffect(() => {
+    if (!askAnnouncement) return;
+    setEventLog(prev => [
+      ...prev.filter(e => e.type !== 'ask_success' && e.type !== 'ask_fail'),
+      {
+        id: `ask_${Date.now()}`,
+        type: askAnnouncement.success ? 'ask_success' : 'ask_fail',
+        message: `${askAnnouncement.askerName} asked ${askAnnouncement.targetName} for ${cardLabel(askAnnouncement.cardId)} — ${askAnnouncement.success ? '✓' : '✗'}`,
+        timestamp: Date.now(),
+      },
+    ]);
+  }, [askAnnouncement]);
 
   // Add turn change to event log
   useEffect(() => {
@@ -253,8 +268,19 @@ export default function GamePage() {
         </div>
       </div>
 
+      {/* Screen border — pulses green when it's your turn */}
+      {isMyTurn && (
+        <div
+          className="fixed inset-0 pointer-events-none z-10 rounded-none animate-pulse"
+          style={{ boxShadow: 'inset 0 0 0 4px #4ade80, inset 0 0 40px rgba(74,222,128,0.25)' }}
+        />
+      )}
+
       {/* Ask announcement overlay */}
-      <AskAnnouncementOverlay announcement={askAnnouncement} />
+      <AskAnnouncementOverlay
+        announcement={askAnnouncement}
+        onDismiss={() => setAskAnnouncement(null)}
+      />
 
       {/* Live call set spectator overlay — shown to everyone except the caller */}
       {callSetProgress && callSetProgress.callerPlayerId !== myPlayerId && (

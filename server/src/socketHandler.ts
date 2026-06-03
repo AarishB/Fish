@@ -607,11 +607,11 @@ export function processAsk(
   checkBotCounterSet(io, roomCode);
 
   // Schedule bot turn if needed.
-  // - Correct ask: bot keeps turn; give extra breathing room after the card travel animation (4800ms)
-  // - Wrong ask: just clear the overlay (3600ms)
+  // - Correct ask: bot keeps turn; give extra breathing room after the card travel animation (9600ms)
+  // - Wrong ask: just clear the overlay (7200ms)
   const nextPlayer = newState.players.find(p => p.id === newState.currentTurnPlayerId);
   if (nextPlayer?.isBot) {
-    const minDelay = result.cardTransferred ? 4800 : 3600;
+    const minDelay = result.cardTransferred ? 9600 : 7200;
     scheduleBotTurn(io, roomCode, nextPlayer.id, minDelay);
   }
 }

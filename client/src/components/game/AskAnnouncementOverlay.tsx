@@ -14,6 +14,7 @@ interface AskAnnouncement {
 
 interface Props {
   readonly announcement: AskAnnouncement | null;
+  readonly onDismiss?: () => void;
 }
 
 // ─── Wrong ask: prohibition sign zooms from tiny → half-screen → fades ────────
@@ -88,7 +89,7 @@ function CardTravelOverlay({ cardId, askerPlayerId, targetPlayerId }: Readonly<{
       if (cancelled) return;
 
       // 3b. Hold at center so everyone can read the card
-      await new Promise<void>(r => setTimeout(r, 1200));
+      await new Promise<void>(r => setTimeout(r, 2400));
       if (cancelled) return;
 
       // 4. Spin + glide to asker's seat, zooming back small
@@ -96,7 +97,7 @@ function CardTravelOverlay({ cardId, askerPlayerId, targetPlayerId }: Readonly<{
       if (cancelled) return;
 
       // 5. Pause — card shown face-up next to asker's hand
-      await new Promise<void>(r => setTimeout(r, 2000));
+      await new Promise<void>(r => setTimeout(r, 4000));
       if (cancelled) return;
 
       // 6. Flip face-down — card joins asker's hidden hand
@@ -123,7 +124,7 @@ function CardTravelOverlay({ cardId, askerPlayerId, targetPlayerId }: Readonly<{
 
 // ─── Main overlay ──────────────────────────────────────────────────────────────
 
-export function AskAnnouncementOverlay({ announcement }: Props) {
+export function AskAnnouncementOverlay({ announcement, onDismiss }: Props) {
   const key = announcement ? `${announcement.cardId}-${announcement.askerName}` : '';
 
   return (
@@ -137,7 +138,9 @@ export function AskAnnouncementOverlay({ announcement }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none"
+            className="fixed inset-0 z-40 flex items-center justify-center"
+            onClick={onDismiss}
+            style={{ cursor: onDismiss ? 'pointer' : 'default' }}
           >
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <motion.div
