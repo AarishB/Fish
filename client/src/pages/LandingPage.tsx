@@ -207,6 +207,7 @@ export default function LandingPage() {
               <Button variant="secondary" size="lg" onClick={() => setMode('join')} className="w-full">
                 🚪 Join Room
               </Button>
+              <Button type="button" variant="ghost" onClick={() => setMode('auth')}>← Back</Button>
             </div>
           )}
 
