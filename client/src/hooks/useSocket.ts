@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import type { ClientGameView, LobbyState, AskRecord } from 'shared';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
+import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
+
+const VALID_BACKS: CardBack[] = ['blue', 'green', 'crimson'];
+function syncCardBack(lobby: LobbyState) {
+  const back = lobby.cardBack as CardBack;
+  if (VALID_BACKS.includes(back)) useSettingsStore.getState().setCardBack(back);
+}
 
 export function useSocket() {
   const navigate = useNavigate();
@@ -19,6 +26,7 @@ export function useSocket() {
       store.setMyIdentity(socket.id ?? '', store.myPlayerName ?? 'You');
       store.setRoomCode(roomCode);
       store.updateLobby(lobby);
+      syncCardBack(lobby);
       navigate(`/lobby/${roomCode}`);
     });
 
@@ -26,6 +34,7 @@ export function useSocket() {
       store.setMyIdentity(socket.id ?? '', store.myPlayerName ?? 'You');
       store.setRoomCode(roomCode);
       store.updateLobby(lobby);
+      syncCardBack(lobby);
       navigate(`/lobby/${roomCode}`);
     });
 

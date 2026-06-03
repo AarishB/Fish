@@ -43,7 +43,7 @@ function buildSlots(playerCount: number): LobbySlot[] {
   return slots;
 }
 
-export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty): Room {
+export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue'): Room {
   const roomCode = generateRoomCode();
   const slots = buildSlots(playerCount);
   // Place host in seat 0 (Team A)
@@ -54,6 +54,7 @@ export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: str
     hostId,
     playerCount,
     difficulty,
+    cardBack,
     slots,
     isStartable: false,
     teamNames: { A: 'Team A', B: 'Team B' },

@@ -51,15 +51,17 @@ export function registerSocketHandlers(io: Server): void {
     // Lobby Events
     // ----------------------------------------------------------
 
-    socket.on('create_room', ({ playerName, playerCount, difficulty }: { playerName: string; playerCount: number; difficulty: GameDifficulty }) => {
+    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string }) => {
       if (!Number.isInteger(playerCount) || playerCount < 4 || playerCount > 14) {
         socket.emit('error', { message: 'Player count must be between 4 and 14.' });
         return;
       }
       const validDifficulties: GameDifficulty[] = ['easy', 'normal', 'hard'];
       const safeDifficulty: GameDifficulty = validDifficulties.includes(difficulty) ? difficulty : 'normal';
+      const validBacks = ['blue', 'green', 'crimson', 'midnight', 'gold', 'obsidian', 'violet', 'ocean'];
+      const safeCardBack = cardBack && validBacks.includes(cardBack) ? cardBack : 'blue';
       const playerId = socket.id;
-      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty);
+      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack);
       socketToPlayer.set(socket.id, { playerId, roomCode: room.roomCode });
       socket.join(room.roomCode);
       socket.emit('room_created', { roomCode: room.roomCode, lobby: room.lobby });

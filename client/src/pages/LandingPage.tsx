@@ -99,7 +99,7 @@ export default function LandingPage() {
     if (!count || count < 4 || count > 14) return;
     setMyIdentity(socket.id ?? '', playerName.trim());
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty });
+    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack });
   }
 
   function handleSelectPreset(n: number) {

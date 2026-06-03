@@ -198,6 +198,7 @@ export interface LobbyState {
   hostId: PlayerId;
   playerCount: number;
   difficulty: GameDifficulty;
+  cardBack: string;
   slots: LobbySlot[];
   isStartable: boolean;
   teamNames: Record<TeamId, string>;
