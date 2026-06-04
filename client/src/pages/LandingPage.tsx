@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { type User as FirebaseUser } from 'firebase/auth';
 import { signInWithGoogle, signOutUser } from '../firebase';
+import { saveUserProfile } from '../userStats';
 import { socket } from '../socket';
 
 function emitWhenConnected(event: string, data: Record<string, unknown>) {
@@ -213,6 +214,7 @@ export default function LandingPage() {
                       try {
                         const user = await signInWithGoogle();
                         setFirebaseUser(user);
+                        await saveUserProfile(user);
                       } catch {
                         // user closed popup — do nothing
                       } finally {

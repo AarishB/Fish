@@ -4,6 +4,8 @@ import type { ClientGameView, LobbyState, AskRecord } from 'shared';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
 import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
+import { auth } from '../firebase';
+import { recordGameResult } from '../userStats';
 
 const VALID_BACKS: CardBack[] = ['blue', 'green', 'crimson'];
 function syncCardBack(lobby: LobbyState) {
@@ -222,6 +224,14 @@ export function useSocket() {
       store.setEndGameVotes(null);
       if (tiebreaker) store.setGameTiebreaker(tiebreaker);
       navigate(`/end?winner=${winnerTeam}`);
+
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        const myPlayerId = useGameStore.getState().myPlayerId;
+        const myTeamId = players.find(p => p.id === myPlayerId)?.teamId;
+        const won = myTeamId === winnerTeam;
+        recordGameResult(firebaseUser.uid, won).catch(() => {});
+      }
     });
 
     // ------ Errors ------
