@@ -60,7 +60,7 @@ const DIFFICULTY_OPTIONS: DifficultyOption[] = [
     id: 'hidden_deck',
     label: 'Hidden Deck',
     emoji: '🃏',
-    description: 'No reveals, no card counts visible, and opponent card backs are blacked out. Maximum deduction. Plus exclusive.',
+    description: 'Cards are dealt to one extra ghost hand — no player controls it. Those cards are hidden from everyone. You can\'t ask the ghost for cards, but when calling a set you must figure out whether each card is with a teammate or in the ghost deck and assign it accordingly. Same win/loss rules apply for correct vs wrong calls. Plus exclusive.',
     plusOnly: true,
   },
   {
@@ -600,6 +600,25 @@ export default function LandingPage() {
               </motion.div>
             </div>
           ))}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-4 text-center text-xs text-gray-600 flex justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => navigate('/privacy-policy')}
+            className="hover:text-gray-400 transition-colors"
+          >
+            Privacy Policy
+          </button>
+          <span>·</span>
+          <button
+            type="button"
+            onClick={() => navigate('/terms-of-service')}
+            className="hover:text-gray-400 transition-colors"
+          >
+            Terms of Service
+          </button>
         </div>
       </motion.div>
     </div>

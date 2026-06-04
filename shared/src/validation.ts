@@ -1,4 +1,5 @@
 import type { GameState, AskAction, CallSetAction, CounterSetAction } from './types';
+import { GHOST_PLAYER_ID } from './types';
 import { canAskForCard, getSetCards } from './sets';
 
 export function validateAsk(
@@ -57,8 +58,14 @@ export function validateCallSet(
     .map(p => p.id);
 
   for (const assignedPid of Object.values(assignment)) {
+    if (assignedPid === GHOST_PLAYER_ID) {
+      if (state.difficulty !== 'hidden_deck') {
+        return { valid: false, reason: 'Ghost deck only available in Hidden Deck mode.' };
+      }
+      continue;
+    }
     if (!teammates.includes(assignedPid)) {
-      return { valid: false, reason: 'You can only assign cards to your own teammates.' };
+      return { valid: false, reason: 'You can only assign cards to teammates or the ghost deck.' };
     }
   }
 

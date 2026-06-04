@@ -176,6 +176,33 @@ export default function GamePage() {
               <div className="text-xs text-gray-400 uppercase tracking-wide text-center mb-3">Sets</div>
               <SetTrophies claimedSets={gameView.claimedSets} />
             </div>
+
+            {/* Ghost deck — only in hidden_deck mode */}
+            {gameView.difficulty === 'hidden_deck' && (
+              <div className="bg-purple-950/40 border border-purple-800/50 rounded-2xl px-4 py-3
+                flex items-center gap-3">
+                <div className="flex items-center">
+                  {Array.from({ length: Math.min(gameView.ghostCardCount, 5) }, (_, i) => (
+                    <div key={i} style={{ marginLeft: i === 0 ? 0 : -18, zIndex: 5 - i }}>
+                      <div className="w-7 h-10 rounded-md border border-purple-700/60 bg-purple-900/60
+                        flex items-center justify-center text-purple-400 text-xs font-bold shadow-md">
+                        ?
+                      </div>
+                    </div>
+                  ))}
+                  {gameView.ghostCardCount > 5 && (
+                    <span className="ml-2 text-xs text-purple-400">+{gameView.ghostCardCount - 5}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-purple-300">👻 Ghost Deck</div>
+                  <div className="text-xs text-purple-500">
+                    {gameView.ghostCardCount} hidden card{gameView.ghostCardCount !== 1 ? 's' : ''} — unknown to all players
+                  </div>
+                </div>
+              </div>
+            )}
+
             <EventLog entries={eventLog} players={gameView.players} />
           </div>
 

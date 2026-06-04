@@ -8,6 +8,7 @@ import type {
   CounterSetResult,
   TeamId,
 } from './types';
+import { GHOST_PLAYER_ID } from './types';
 import { getSetCards } from './sets';
 import { WINNING_SETS } from './constants';
 
@@ -75,10 +76,13 @@ export function applyCallSet(
   const caller = state.players.find(p => p.id === callingPlayerId)!;
   const setCards = getSetCards(setId);
 
-  // Check correctness: every card must actually be with the assigned player
+  // Check correctness: every card must actually be with the assigned player (or ghost hand)
   let correct = true;
   for (const [cardId, assignedPid] of Object.entries(assignment)) {
-    if (!state.hands[assignedPid]?.includes(cardId)) {
+    const hand = assignedPid === GHOST_PLAYER_ID
+      ? state.ghostHand
+      : state.hands[assignedPid];
+    if (!hand?.includes(cardId)) {
       correct = false;
       break;
     }
@@ -88,15 +92,17 @@ export function applyCallSet(
     ? caller.teamId
     : caller.teamId === 'A' ? 'B' : 'A';
 
-  // Remove all set cards from all hands
+  // Remove all set cards from all hands and the ghost hand
   const newHands: Record<string, string[]> = {};
   for (const [pid, hand] of Object.entries(state.hands)) {
     newHands[pid] = hand.filter(c => !setCards.includes(c));
   }
+  const newGhostHand = state.ghostHand.filter(c => !setCards.includes(c));
 
   let newState: GameState = {
     ...state,
     hands: newHands,
+    ghostHand: newGhostHand,
     claimedSets: [
       ...state.claimedSets,
       { setId, wonByTeam: winningTeam, calledBy: callingPlayerId, wasCounter: false },
@@ -144,6 +150,7 @@ export function applyCounterSet(
   let newState: GameState = {
     ...state,
     hands: newHands,
+    ghostHand: state.ghostHand.filter(c => !setCards.includes(c)),
     claimedSets: [
       ...state.claimedSets,
       { setId, wonByTeam: winningTeam, calledBy: callingPlayerId, wasCounter: true },

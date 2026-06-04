@@ -11,6 +11,7 @@ import type {
   SwapRequest,
 } from 'shared';
 import {
+  GHOST_PLAYER_ID,
   validateAsk,
   validateCallSet,
   validateCounterSet,
@@ -56,7 +57,7 @@ export function registerSocketHandlers(io: Server): void {
         socket.emit('error', { message: 'Player count must be between 4 and 14.' });
         return;
       }
-      const validDifficulties: GameDifficulty[] = ['easy', 'normal', 'hard'];
+      const validDifficulties: GameDifficulty[] = ['easy', 'normal', 'hard', 'hidden_deck'];
       const safeDifficulty: GameDifficulty = validDifficulties.includes(difficulty) ? difficulty : 'normal';
       const validBacks = ['blue', 'green', 'crimson', 'midnight', 'gold', 'obsidian', 'violet', 'ocean'];
       const safeCardBack = cardBack && validBacks.includes(cardBack) ? cardBack : 'blue';
@@ -336,12 +337,15 @@ export function registerSocketHandlers(io: Server): void {
       // Initialize reveal credits for human players
       initRevealCredits(room);
 
-      // Initialize bot states
+      // Initialize bot states — include GHOST_PLAYER_ID so bots track it as a possible holder
+      const allPlayerIds = room.game.players.map(p => p.id);
+      const botPlayerIds = room.game.difficulty === 'hidden_deck'
+        ? [...allPlayerIds, GHOST_PLAYER_ID]
+        : allPlayerIds;
       for (const player of room.game.players) {
         if (player.isBot) {
           const botHand = room.game.hands[player.id] ?? [];
-          const allPlayerIds = room.game.players.map(p => p.id);
-          room.botStates.set(player.id, createBotState(player.id, botHand, allPlayerIds));
+          room.botStates.set(player.id, createBotState(player.id, botHand, botPlayerIds));
         }
       }
 

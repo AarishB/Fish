@@ -9,6 +9,7 @@ import {
   getSetCards,
   SET_DEFINITIONS,
   ALL_SET_IDS,
+  GHOST_PLAYER_ID,
 } from 'shared';
 import type { SetId } from 'shared';
 
@@ -134,6 +135,7 @@ export function CallSetModal({ open, onClose }: CallSetModalProps) {
             {setCards.map(cardId => {
               const isOwnCard = gameView.myHand.includes(cardId);
               const assignedTo = assignment[cardId];
+              const isHiddenDeck = gameView.difficulty === 'hidden_deck';
 
               return (
                 <div key={cardId} className="flex items-center gap-3">
@@ -160,6 +162,20 @@ export function CallSetModal({ open, onClose }: CallSetModalProps) {
                         </button>
                       );
                     })}
+
+                    {/* Ghost deck option — hidden_deck mode only, disabled for own cards */}
+                    {isHiddenDeck && !isOwnCard && (
+                      <button
+                        onClick={() => handleAssign(cardId, GHOST_PLAYER_ID)}
+                        className={`px-3 py-1 rounded-lg text-xs border transition-all
+                          ${assignedTo === GHOST_PLAYER_ID
+                            ? 'bg-purple-900/50 border-purple-500 text-purple-200 font-bold'
+                            : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-300'
+                          }`}
+                      >
+                        👻 Ghost Deck
+                      </button>
+                    )}
                   </div>
                 </div>
               );

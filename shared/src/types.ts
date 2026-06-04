@@ -43,7 +43,10 @@ export interface SetDefinition {
 // Difficulty
 // ============================================================
 
-export type GameDifficulty = 'easy' | 'normal' | 'hard';
+export type GameDifficulty = 'easy' | 'normal' | 'hard' | 'hidden_deck';
+
+// Special player ID representing the hidden ghost hand in hidden_deck mode
+export const GHOST_PLAYER_ID = '__ghost__';
 
 // ============================================================
 // Players & Teams
@@ -90,6 +93,7 @@ export interface GameState {
   players: PlayerInfo[];
   currentTurnPlayerId: PlayerId;
   hands: Record<PlayerId, string[]>; // full hands, server-only
+  ghostHand: string[];               // hidden deck cards (hidden_deck mode only, server-only)
   claimedSets: SetOwnership[];
   scores: Record<TeamId, number>;
   lastAction: ActionRecord | null;
@@ -109,6 +113,7 @@ export interface ClientGameView {
   scores: Record<TeamId, number>;
   lastAction: ActionRecord | null;
   turnNumber: number;
+  ghostCardCount: number; // how many cards are in the hidden deck (0 when not hidden_deck mode)
 }
 
 // ============================================================

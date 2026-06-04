@@ -20,6 +20,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       p3: ['clubs_2', 'clubs_3', 'clubs_4'],
       p4: ['clubs_5', 'clubs_6', 'clubs_7'],
     },
+    ghostHand: [],
     claimedSets: [],
     scores: { A: 0, B: 0 },
     lastAction: null,
