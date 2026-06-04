@@ -117,6 +117,10 @@ export default function GamePage() {
     if (!roomCode || hasVotedEndGame) return;
     socket.emit('vote_end_game', { roomCode });
   }
+  function handleUnvoteEndGame() {
+    if (!roomCode || !hasVotedEndGame) return;
+    socket.emit('unvote_end_game', { roomCode });
+  }
 
   return (
     <div className="min-h-screen bg-felt flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #236B43 0%, #133D24 100%)' }}>
@@ -251,17 +255,16 @@ export default function GamePage() {
                     </button>
                   )}
                   <button
-                    onClick={handleVoteEndGame}
-                    disabled={hasVotedEndGame}
+                    onClick={hasVotedEndGame ? handleUnvoteEndGame : handleVoteEndGame}
                     className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-bold
                       transition-all active:scale-95
                       ${hasVotedEndGame
-                        ? 'opacity-40 cursor-not-allowed border-gray-700 text-gray-500'
+                        ? 'bg-gray-800/60 border-gray-600 text-gray-400 hover:bg-gray-700/60'
                         : 'bg-red-950/40 border-red-700 text-red-300 hover:bg-red-900/40'
                       }`}
-                    title="Vote to end the game early"
+                    title={hasVotedEndGame ? 'Withdraw your vote' : 'Vote to end the game early'}
                   >
-                    🏳️ End ({endGameVotes?.votes ?? 0}/{humanCount})
+                    {hasVotedEndGame ? '↩ Unvote' : '🏳️ End'} ({endGameVotes?.votes ?? 0}/{humanCount})
                   </button>
                 </div>
               </div>

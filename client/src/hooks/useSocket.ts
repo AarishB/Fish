@@ -211,13 +211,14 @@ export function useSocket() {
     });
 
     // ------ Game Over ------
-    socket.on('game_over', ({ winnerTeam, scores, claimedSets, players, fullAskHistory, tiebreaker }: {
+    socket.on('game_over', ({ winnerTeam, scores, claimedSets, players, fullAskHistory, tiebreaker, wasEarlyEnd }: {
       winnerTeam: string;
       scores: ClientGameView['scores'];
       claimedSets: ClientGameView['claimedSets'];
       players: ClientGameView['players'];
       fullAskHistory: AskRecord[];
       tiebreaker?: { winnerTeam: string; teamACards: number; teamBCards: number } | null;
+      wasEarlyEnd?: boolean;
     }) => {
       store.updateScoresAndSets(scores, claimedSets, players);
       store.setRevealedAsks(fullAskHistory);
@@ -230,7 +231,7 @@ export function useSocket() {
         const myPlayerId = useGameStore.getState().myPlayerId;
         const myTeamId = players.find(p => p.id === myPlayerId)?.teamId;
         const won = myTeamId === winnerTeam;
-        recordGameResult(firebaseUser.uid, won).catch(() => {});
+        recordGameResult(firebaseUser.uid, won, wasEarlyEnd ?? false).catch(() => {});
       }
     });
 
@@ -252,6 +253,7 @@ export function useSocket() {
       socket.off('swap_requested');
       socket.off('left_lobby');
       socket.off('end_game_vote_updated');
+      socket.off('unvote_end_game');
       socket.off('game_started');
       socket.off('ask_result');
       socket.off('hand_updated');

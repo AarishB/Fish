@@ -466,8 +466,18 @@ export function registerSocketHandlers(io: Server): void {
           tiebreaker = { winnerTeam: cardsA >= cardsB ? 'A' : 'B', teamACards: cardsA, teamBCards: cardsB };
         }
 
-        emitGameOver(io, roomCode, state, winner, tiebreaker);
+        emitGameOver(io, roomCode, state, winner, tiebreaker, true);
       }
+    });
+
+    socket.on('unvote_end_game', ({ roomCode }: { roomCode: string }) => {
+      const room = getRoom(roomCode);
+      if (!room || !room.game || room.game.phase !== 'in_progress') return;
+      room.endGameVotes.delete(socket.id);
+      const humanPlayers = room.game.players.filter(p => !p.isBot);
+      const needed = humanPlayers.length;
+      const voterIds = Array.from(room.endGameVotes);
+      io.to(roomCode).emit('end_game_vote_updated', { votes: voterIds.length, needed, voterIds });
     });
 
     socket.on('pass_turn', ({ roomCode, toPlayerId }: { roomCode: string; toPlayerId: PlayerId }) => {
@@ -782,7 +792,8 @@ function emitGameOver(
   roomCode: string,
   state: GameState,
   winner: string,
-  tiebreaker?: { winnerTeam: TeamId; teamACards: number; teamBCards: number } | null
+  tiebreaker?: { winnerTeam: TeamId; teamACards: number; teamBCards: number } | null,
+  wasEarlyEnd = false
 ): void {
   state.phase = 'game_over';
   io.to(roomCode).emit('game_over', {
@@ -792,5 +803,6 @@ function emitGameOver(
     players: state.players,
     fullAskHistory: state.askHistory, // safe to reveal now — game is over
     tiebreaker: tiebreaker ?? null,
+    wasEarlyEnd,
   });
 }

@@ -7,31 +7,41 @@ export async function saveUserProfile(user: FirebaseUser): Promise<void> {
   const snap = await getDoc(ref);
 
   if (snap.exists()) {
-    // Re-login: only refresh mutable profile fields, leave stats/isPlus/createdAt untouched
     await setDoc(ref, {
       displayName: user.displayName ?? '',
       email: user.email ?? '',
       photoURL: user.photoURL ?? '',
     }, { merge: true });
   } else {
-    // First login: create full document with default stats
     await setDoc(ref, {
       gamesPlayed: 0,
       wins: 0,
       losses: 0,
+      gamesEndedEarly: 0,
       isPlus: false,
       displayName: user.displayName ?? '',
       email: user.email ?? '',
       photoURL: user.photoURL ?? '',
+      age: null,
+      country: '',
       createdAt: serverTimestamp(),
     });
   }
 }
 
-export async function recordGameResult(uid: string, won: boolean): Promise<void> {
+export async function updateUserProfile(
+  uid: string,
+  data: { displayName?: string; age?: number | null; country?: string }
+): Promise<void> {
+  const ref = doc(db, 'users', uid);
+  await updateDoc(ref, data);
+}
+
+export async function recordGameResult(uid: string, won: boolean, earlyEnd = false): Promise<void> {
   const ref = doc(db, 'users', uid);
   await updateDoc(ref, {
     gamesPlayed: increment(1),
     ...(won ? { wins: increment(1) } : { losses: increment(1) }),
+    ...(earlyEnd ? { gamesEndedEarly: increment(1) } : {}),
   });
 }
