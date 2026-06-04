@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { type User as FirebaseUser } from 'firebase/auth';
+import { signInWithGoogle, signOutUser } from '../firebase';
 import { socket } from '../socket';
 
 function emitWhenConnected(event: string, data: Record<string, unknown>) {
@@ -79,6 +81,8 @@ const HOW_TO_PLAY = [
 
 export default function LandingPage() {
   const [mode, setMode] = useState<Mode>('auth');
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const [playerName, setPlayerName] = useState('');
   const [playerCount, setPlayerCount] = useState<number>(6);
   const [isCustom, setIsCustom] = useState(false);
@@ -170,32 +174,76 @@ export default function LandingPage() {
         <div className="bg-gray-900/90 border border-gray-700 rounded-3xl p-8 shadow-2xl backdrop-blur">
           {mode === 'auth' && (
             <div className="flex flex-col gap-4">
-              <button
-                type="button"
-                onClick={() => {}}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-                  bg-white hover:bg-gray-100 active:bg-gray-200 transition-colors
-                  text-gray-800 font-semibold text-sm shadow-sm"
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                Sign in with Google
-              </button>
+              {firebaseUser ? (
+                <>
+                  {/* Signed-in profile */}
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                    {firebaseUser.photoURL && (
+                      <img
+                        src={firebaseUser.photoURL}
+                        alt="profile"
+                        className="w-10 h-10 rounded-full"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-semibold text-sm truncate">{firebaseUser.displayName}</div>
+                      <div className="text-gray-400 text-xs truncate">{firebaseUser.email}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => { await signOutUser(); setFirebaseUser(null); }}
+                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+                    >
+                      Sign out
+                    </button>
+                  </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-700" />
-                <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
-                <div className="flex-1 h-px bg-gray-700" />
-              </div>
+                  <Button variant="primary" size="lg" onClick={() => setMode('home')} className="w-full">
+                    Continue →
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={authLoading}
+                    onClick={async () => {
+                      setAuthLoading(true);
+                      try {
+                        const user = await signInWithGoogle();
+                        setFirebaseUser(user);
+                      } catch {
+                        // user closed popup — do nothing
+                      } finally {
+                        setAuthLoading(false);
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
+                      bg-white hover:bg-gray-100 active:bg-gray-200 disabled:opacity-60
+                      transition-colors text-gray-800 font-semibold text-sm shadow-sm"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      <path fill="none" d="M0 0h48v48H0z"/>
+                    </svg>
+                    {authLoading ? 'Signing in…' : 'Sign in with Google'}
+                  </button>
 
-              <Button variant="secondary" size="lg" onClick={() => setMode('home')} className="w-full">
-                Play as Guest
-              </Button>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-gray-700" />
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
+                    <div className="flex-1 h-px bg-gray-700" />
+                  </div>
+
+                  <Button variant="secondary" size="lg" onClick={() => setMode('home')} className="w-full">
+                    Play as Guest
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
