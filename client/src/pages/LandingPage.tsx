@@ -363,11 +363,11 @@ export default function LandingPage() {
                           const isSelected = !locked && difficulty === opt.id;
                           let tileClass: string;
                           if (opt.disabled) {
-                            tileClass = 'opacity-40 cursor-not-allowed border-gray-700 text-gray-500';
+                            tileClass = 'opacity-30 cursor-not-allowed border-gray-700 text-gray-500';
                           } else if (isSelected) {
                             tileClass = 'border-teamA bg-teamA/10 text-white';
                           } else if (opt.plusOnly && !isPlus) {
-                            tileClass = 'border-amber-800/50 text-gray-300 hover:border-amber-600/60 cursor-pointer';
+                            tileClass = 'border-amber-700/40 bg-amber-500/5 text-gray-200 hover:border-amber-500/60 hover:bg-amber-500/10 cursor-pointer';
                           } else {
                             tileClass = 'border-gray-700 text-gray-300 hover:border-gray-500';
                           }
@@ -389,7 +389,8 @@ export default function LandingPage() {
                                 <span className="text-xs text-gray-600 italic">Coming soon</span>
                               )}
                               {opt.plusOnly && !isPlus && (
-                                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">✦ Plus</span>
+                                <span className="text-xs font-black px-1.5 py-0.5 rounded-md
+                                  bg-amber-500 text-black leading-none">✦ Plus</span>
                               )}
                               {/* Info icon */}
                               <button
@@ -425,6 +426,17 @@ export default function LandingPage() {
                                       </span>
                                     </div>
                                   )}
+                                  {opt.plusOnly && !isPlus && (
+                                    <button
+                                      type="button"
+                                      onClick={handlePlusGated}
+                                      className="mt-2 flex items-center gap-1.5 text-amber-400
+                                        hover:text-amber-300 transition-colors font-semibold"
+                                    >
+                                      <span>✦</span>
+                                      <span>Unlock this mode with Plus</span>
+                                    </button>
+                                  )}
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -445,45 +457,71 @@ export default function LandingPage() {
                     const isPlusBack = PLUS_BACKS.has(id);
                     const isUnlocked = !def.locked || (isPlusBack && isPlus);
                     const isActive = isUnlocked && cardBack === id;
+                    const isComingSoon = !isPlusBack && def.locked;
                     return (
                       <button
                         key={id}
                         type="button"
+                        title={isPlusBack && !isPlus ? `${def.label} — Plus only` : def.label}
                         onClick={() => {
                           if (isPlusBack && !isPlus) { handlePlusGated(); return; }
                           if (isUnlocked) setCardBack(id as CardBack);
                         }}
-                        className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+                        className={`flex flex-col items-center gap-1 flex-shrink-0 group
+                          ${isComingSoon ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
+                        {/* Card mini-preview */}
                         <div
-                          className={`relative w-10 h-14 rounded-lg border-2 overflow-hidden flex items-center justify-center transition-all
-                            ${!isUnlocked && !isPlusBack ? 'opacity-40' : ''}
-                            ${isActive ? `${def.borderColor} ring-2 ring-offset-2 ring-offset-gray-900 ring-white/30 scale-110` : 'border-gray-600'}
-                            ${isUnlocked ? 'group-hover:border-gray-400' : ''}
-                          `}
+                          className={`relative w-10 h-14 rounded-lg border-2 overflow-hidden flex items-center justify-center
+                            transition-all duration-150
+                            ${isActive
+                              ? `${def.borderColor} ring-2 ring-offset-2 ring-offset-gray-900 ring-white/30 scale-110`
+                              : isPlusBack && !isPlus
+                                ? 'border-amber-600/50 group-hover:border-amber-400/80 group-hover:scale-105'
+                                : 'border-gray-600 group-hover:border-gray-400 group-hover:scale-105'
+                            }`}
                           style={def.container}
                         >
                           <div className="absolute inset-0" style={def.pattern} />
                           <div className="absolute inset-[2px] rounded border border-white/10 pointer-events-none" />
                           <span className={`relative z-10 ${def.symbolColor} opacity-70 text-base`}>✦</span>
+
+                          {/* Plus lock badge — top-right corner, small */}
                           {isPlusBack && !isPlus && (
-                            <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg bg-black/30">
-                              <span className="text-xs font-bold text-amber-400">✦</span>
-                            </div>
-                          )}
-                          {!isPlusBack && def.locked && (
-                            <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg">
-                              <span className="text-xs">🔒</span>
+                            <div className="absolute top-0.5 right-0.5 z-20
+                              bg-amber-500 rounded-sm px-[3px] py-[1px] leading-none">
+                              <span className="text-[8px] font-black text-black">✦</span>
                             </div>
                           )}
                         </div>
-                        <span className={`text-xs ${isActive ? 'text-white' : 'text-gray-500'} transition-colors`}>
+
+                        {/* Label */}
+                        <span className={`text-[10px] leading-tight transition-colors
+                          ${isActive ? 'text-white font-semibold'
+                            : isPlusBack && !isPlus ? 'text-amber-400/80'
+                            : 'text-gray-500'}`}>
                           {def.label}
                         </span>
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Plus upsell strip — only shown to free users */}
+                {!isPlus && (
+                  <button
+                    type="button"
+                    onClick={handlePlusGated}
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg
+                      border border-amber-500/25 bg-amber-500/5
+                      hover:bg-amber-500/10 hover:border-amber-500/50 transition-all group"
+                  >
+                    <span className="text-amber-400 text-xs">🔒</span>
+                    <span className="text-xs text-amber-400/70 group-hover:text-amber-300 transition-colors">
+                      Midnight, Gold &amp; Obsidian unlocked with <span className="font-bold text-amber-400">Plus ✦</span>
+                    </span>
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-3">
