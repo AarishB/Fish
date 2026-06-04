@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/useGameStore';
+import { usePlusStatus } from '../hooks/usePlusStatus';
 import { socket } from '../socket';
 import { Button } from '../components/ui/Button';
 import { CardHand } from '../components/cards/CardHand';
@@ -85,6 +86,8 @@ export default function GamePage() {
       ]);
     }
   }, [gameView?.currentTurnPlayerId]);
+
+  const isPlus = usePlusStatus();
 
   if (!gameView) {
     return (
@@ -199,6 +202,7 @@ export default function GamePage() {
                   player={myPlayer}
                   isCurrentTurn={isMyTurn}
                   isLocalPlayer={true}
+                  isPlus={isPlus}
                   position="bottom"
                 />
 

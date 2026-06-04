@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import { useAuthStore } from './store/useAuthStore';
 import { useSocket } from './hooks/useSocket';
 import LandingPage from './pages/LandingPage';
@@ -28,9 +29,8 @@ function AppInner() {
 }
 
 export default function App() {
-  const { setUser, setLoading } = useAuthStore();
+  const { setUser, setIsPlus, setLoading } = useAuthStore();
 
-  // Keep-alive ping to prevent Render free tier sleep
   useEffect(() => {
     const id = setInterval(() => {
       fetch('https://fish-d9st.onrender.com/health').catch(() => {});
@@ -38,14 +38,19 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Persist Firebase auth across page refreshes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        setIsPlus(snap.data()?.isPlus ?? false);
+      } else {
+        setIsPlus(false);
+      }
       setLoading(false);
     });
     return unsubscribe;
-  }, [setUser, setLoading]);
+  }, [setUser, setIsPlus, setLoading]);
 
   return (
     <BrowserRouter>

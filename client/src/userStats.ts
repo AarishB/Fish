@@ -19,6 +19,7 @@ export async function saveUserProfile(user: FirebaseUser): Promise<void> {
       losses: 0,
       gamesEndedEarly: 0,
       isPlus: false,
+      stripeCustomerId: null,
       displayName: user.displayName ?? '',
       email: user.email ?? '',
       photoURL: user.photoURL ?? '',

@@ -2,11 +2,13 @@ import { motion } from 'framer-motion';
 import type { PlayerInfo } from 'shared';
 import { useGameStore } from '../../store/useGameStore';
 import { Card } from '../cards/Card';
+import { PlusRing } from '../ui/PlusRing';
 
 interface PlayerSeatProps {
   player: PlayerInfo;
   isCurrentTurn: boolean;
   isLocalPlayer: boolean;
+  isPlus?: boolean;
   isSelectable?: boolean;
   onSelect?: (playerId: string) => void;
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -48,6 +50,7 @@ export function PlayerSeat({
   player,
   isCurrentTurn,
   isLocalPlayer,
+  isPlus = false,
   isSelectable = false,
   onSelect,
   position = 'top',
@@ -103,7 +106,9 @@ export function PlayerSeat({
             ))}
           </div>
         )}
-        <Avatar player={player} />
+        <PlusRing active={isPlus} padding={2}>
+          <Avatar player={player} />
+        </PlusRing>
         {!isLocalPlayer && position === 'right' && player.cardCount > 0 && (
           <div className="flex items-center">
             {Array.from({ length: player.cardCount }, (_, i) => (

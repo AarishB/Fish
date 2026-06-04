@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithGoogle } from '../firebase';
 import { saveUserProfile } from '../userStats';
 import { useAuthStore } from '../store/useAuthStore';
+import { usePlusStatus } from '../hooks/usePlusStatus';
+import { upgradeToPlusButton } from '../stripe';
 import { socket } from '../socket';
 
 function emitWhenConnected(event: string, data: Record<string, unknown>) {
@@ -24,12 +26,15 @@ type Mode = 'auth' | 'home' | 'create' | 'join';
 
 const PRESET_COUNTS = [4, 6, 8, 10] as const;
 
+const PLUS_BACKS = new Set(['midnight', 'gold', 'obsidian']);
+
 interface DifficultyOption {
-  id: GameDifficulty | 'very_hard';
+  id: GameDifficulty | 'very_hard' | 'hidden_deck';
   label: string;
   emoji: string;
   description: string;
   disabled?: boolean;
+  plusOnly?: boolean;
 }
 
 const DIFFICULTY_OPTIONS: DifficultyOption[] = [
@@ -50,6 +55,13 @@ const DIFFICULTY_OPTIONS: DifficultyOption[] = [
     label: 'Hard',
     emoji: '🔥',
     description: 'No reveals at all. Pure memory — pay attention or lose.',
+  },
+  {
+    id: 'hidden_deck',
+    label: 'Hidden Deck',
+    emoji: '🃏',
+    description: 'No reveals, no card counts visible, and opponent card backs are blacked out. Maximum deduction. Plus exclusive.',
+    plusOnly: true,
   },
   {
     id: 'very_hard',
@@ -95,9 +107,16 @@ export default function LandingPage() {
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState<string | null>(null);
+  const isPlus = usePlusStatus();
   const setMyIdentity = useGameStore(s => s.setMyIdentity);
+  const addToast = useGameStore(s => s.addToast);
   const { cardBack, setCardBack } = useSettingsStore();
   const myPlayerName = useGameStore(s => s.myPlayerName);
+
+  function handlePlusGated() {
+    void upgradeToPlusButton();
+    addToast('✦ Upgrade to Plus to unlock this feature', 'info');
+  }
 
   // Auto-advance past auth screen when Firebase session is already active
   useEffect(() => {
@@ -340,12 +359,15 @@ export default function LandingPage() {
                       <div className="p-3 flex flex-col gap-2">
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Difficulty</p>
                         {DIFFICULTY_OPTIONS.map(opt => {
-                          const isSelected = !opt.disabled && difficulty === opt.id;
+                          const locked = opt.disabled || (opt.plusOnly && !isPlus);
+                          const isSelected = !locked && difficulty === opt.id;
                           let tileClass: string;
                           if (opt.disabled) {
                             tileClass = 'opacity-40 cursor-not-allowed border-gray-700 text-gray-500';
                           } else if (isSelected) {
                             tileClass = 'border-teamA bg-teamA/10 text-white';
+                          } else if (opt.plusOnly && !isPlus) {
+                            tileClass = 'border-amber-800/50 text-gray-300 hover:border-amber-600/60 cursor-pointer';
                           } else {
                             tileClass = 'border-gray-700 text-gray-300 hover:border-gray-500';
                           }
@@ -354,13 +376,20 @@ export default function LandingPage() {
                             <button
                               type="button"
                               disabled={opt.disabled}
-                              onClick={() => { if (!opt.disabled && opt.id !== 'very_hard') setDifficulty(opt.id); }}
+                              onClick={() => {
+                                if (opt.disabled) return;
+                                if (opt.plusOnly && !isPlus) { handlePlusGated(); return; }
+                                if (opt.id !== 'very_hard' && opt.id !== 'hidden_deck') setDifficulty(opt.id as GameDifficulty);
+                              }}
                               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border-2 text-left transition-all ${tileClass}`}
                             >
                               <span className="text-lg">{opt.emoji}</span>
                               <span className="font-semibold text-sm flex-1">{opt.label}</span>
                               {opt.disabled && (
                                 <span className="text-xs text-gray-600 italic">Coming soon</span>
+                              )}
+                              {opt.plusOnly && !isPlus && (
+                                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">✦ Plus</span>
                               )}
                               {/* Info icon */}
                               <button
@@ -412,36 +441,48 @@ export default function LandingPage() {
               <div className="border border-gray-700 rounded-xl p-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Card Design</p>
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-subtle">
-                  {Object.entries(CARD_BACK_DEFS).map(([id, def]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      disabled={def.locked}
-                      onClick={() => { if (!def.locked) setCardBack(id as CardBack); }}
-                      className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
-                    >
-                      <div
-                        className={`relative w-10 h-14 rounded-lg border-2 overflow-hidden flex items-center justify-center transition-all
-                          ${def.locked ? 'opacity-40' : ''}
-                          ${!def.locked && cardBack === id ? `${def.borderColor} ring-2 ring-offset-2 ring-offset-gray-900 ring-white/30 scale-110` : 'border-gray-600'}
-                          ${!def.locked ? 'group-hover:border-gray-400' : ''}
-                        `}
-                        style={def.container}
+                  {Object.entries(CARD_BACK_DEFS).map(([id, def]) => {
+                    const isPlusBack = PLUS_BACKS.has(id);
+                    const isUnlocked = !def.locked || (isPlusBack && isPlus);
+                    const isActive = isUnlocked && cardBack === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          if (isPlusBack && !isPlus) { handlePlusGated(); return; }
+                          if (isUnlocked) setCardBack(id as CardBack);
+                        }}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
                       >
-                        <div className="absolute inset-0" style={def.pattern} />
-                        <div className="absolute inset-[2px] rounded border border-white/10 pointer-events-none" />
-                        <span className={`relative z-10 ${def.symbolColor} opacity-70 text-base`}>✦</span>
-                        {def.locked && (
-                          <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg">
-                            <span className="text-xs">🔒</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className={`text-xs ${!def.locked && cardBack === id ? 'text-white' : 'text-gray-500'} transition-colors`}>
-                        {def.label}
-                      </span>
-                    </button>
-                  ))}
+                        <div
+                          className={`relative w-10 h-14 rounded-lg border-2 overflow-hidden flex items-center justify-center transition-all
+                            ${!isUnlocked && !isPlusBack ? 'opacity-40' : ''}
+                            ${isActive ? `${def.borderColor} ring-2 ring-offset-2 ring-offset-gray-900 ring-white/30 scale-110` : 'border-gray-600'}
+                            ${isUnlocked ? 'group-hover:border-gray-400' : ''}
+                          `}
+                          style={def.container}
+                        >
+                          <div className="absolute inset-0" style={def.pattern} />
+                          <div className="absolute inset-[2px] rounded border border-white/10 pointer-events-none" />
+                          <span className={`relative z-10 ${def.symbolColor} opacity-70 text-base`}>✦</span>
+                          {isPlusBack && !isPlus && (
+                            <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg bg-black/30">
+                              <span className="text-xs font-bold text-amber-400">✦</span>
+                            </div>
+                          )}
+                          {!isPlusBack && def.locked && (
+                            <div className="absolute inset-0 flex items-end justify-center pb-1 rounded-lg">
+                              <span className="text-xs">🔒</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-xs ${isActive ? 'text-white' : 'text-gray-500'} transition-colors`}>
+                          {def.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
