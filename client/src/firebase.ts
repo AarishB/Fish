@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDkd0NR59t4V6KIEpn47seMx9H2hZhSu8o',
-  authDomain: 'fish-card-game-60d98.firebaseapp.com',
-  projectId: 'fish-card-game-60d98',
-  storageBucket: 'fish-card-game-60d98.firebasestorage.app',
-  messagingSenderId: '1058947674365',
-  appId: '1:1058947674365:web:671d9b283de4c7f1ea8e94',
-  measurementId: 'G-9WE8KJBRPY',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
