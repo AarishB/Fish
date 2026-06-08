@@ -37,6 +37,7 @@ import {
   renameTeam,
   addSwapRequest,
   removeSwapRequest,
+  getRoomSummaries,
 } from './rooms/roomManager';
 import { initializeGame, buildClientView } from './game/gameManager';
 import { createBotState, updateBotState, removeSetFromBotState } from './bot/botBrain';
@@ -52,7 +53,7 @@ export function registerSocketHandlers(io: Server): void {
     // Lobby Events
     // ----------------------------------------------------------
 
-    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack, photoURL, isPlus }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string; photoURL?: string; isPlus?: boolean }) => {
+    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack, photoURL, isPlus, username, roomName }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string; photoURL?: string; isPlus?: boolean; username?: string; roomName?: string }) => {
       if (!Number.isInteger(playerCount) || playerCount < 4 || playerCount > 14) {
         socket.emit('error', { message: 'Player count must be between 4 and 14.' });
         return;
@@ -62,14 +63,15 @@ export function registerSocketHandlers(io: Server): void {
       const validBacks = ['blue', 'green', 'crimson', 'midnight', 'gold', 'obsidian', 'violet', 'ocean'];
       const safeCardBack = cardBack && validBacks.includes(cardBack) ? cardBack : 'blue';
       const playerId = socket.id;
-      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack, { photoURL, isPlus });
+      const safeRoomName = roomName?.trim().slice(0, 40) || undefined;
+      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack, { photoURL, isPlus, username, roomName: safeRoomName });
       socketToPlayer.set(socket.id, { playerId, roomCode: room.roomCode });
       socket.join(room.roomCode);
       socket.emit('room_created', { roomCode: room.roomCode, lobby: room.lobby });
     });
 
-    socket.on('join_room', ({ roomCode, playerName, preferredTeam, photoURL, isPlus }: { roomCode: string; playerName: string; preferredTeam?: TeamId; photoURL?: string; isPlus?: boolean }) => {
-      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, preferredTeam, photoURL, isPlus);
+    socket.on('join_room', ({ roomCode, playerName, preferredTeam, photoURL, isPlus, username }: { roomCode: string; playerName: string; preferredTeam?: TeamId; photoURL?: string; isPlus?: boolean; username?: string }) => {
+      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, { preferredTeam, photoURL, isPlus, username });
       if ('error' in result) {
         socket.emit('error', { message: result.error });
         return;
@@ -98,6 +100,10 @@ export function registerSocketHandlers(io: Server): void {
           }
         }
       }
+    });
+
+    socket.on('list_rooms', () => {
+      socket.emit('rooms_list', { rooms: getRoomSummaries() });
     });
 
     socket.on('leave_lobby', ({ roomCode }: { roomCode: string }) => {

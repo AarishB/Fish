@@ -6,6 +6,7 @@ import type {
   TeamId,
   GameDifficulty,
   SwapRequest,
+  RoomSummary,
 } from 'shared';
 import { getInitialRevealCredits } from 'shared';
 import type { BotState } from '../bot/botBrain';
@@ -44,16 +45,17 @@ function buildSlots(playerCount: number): LobbySlot[] {
   return slots;
 }
 
-interface CreateRoomOpts { photoURL?: string; isPlus?: boolean }
+interface CreateRoomOpts { photoURL?: string; isPlus?: boolean; username?: string; roomName?: string }
 
 export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue', opts: CreateRoomOpts = {}): Room {
   const roomCode = generateRoomCode();
   const slots = buildSlots(playerCount);
   // Place host in seat 0 (Team A)
-  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, photoURL: opts.photoURL, isPlus: opts.isPlus, teamId: 'A' };
+  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, photoURL: opts.photoURL, isPlus: opts.isPlus, username: opts.username, teamId: 'A' };
 
   const lobby: LobbyState = {
     roomCode,
+    roomName: opts.roomName,
     hostId,
     playerCount,
     difficulty,
@@ -90,22 +92,22 @@ export function deleteRoom(roomCode: string): void {
   rooms.delete(roomCode);
 }
 
+interface JoinRoomOpts { preferredTeam?: TeamId; photoURL?: string; isPlus?: boolean; username?: string }
+
 export function joinRoom(
   roomCode: string,
   playerId: PlayerId,
   playerName: string,
   socketId: string,
-  preferredTeam?: TeamId,
-  photoURL?: string,
-  isPlus?: boolean,
+  opts: JoinRoomOpts = {},
 ): { slot: LobbySlot; lobby: LobbyState } | { error: string } {
   const room = rooms.get(roomCode);
   if (!room) return { error: 'Room not found.' };
   if (room.game) return { error: 'Game already in progress.' };
 
   // Try preferred team first, then fall back to any empty slot
-  let emptySlot = preferredTeam
-    ? room.lobby.slots.find(s => s.status === 'empty' && s.teamId === preferredTeam)
+  let emptySlot = opts.preferredTeam
+    ? room.lobby.slots.find(s => s.status === 'empty' && s.teamId === opts.preferredTeam)
     : undefined;
   emptySlot ??= room.lobby.slots.find(s => s.status === 'empty');
   if (!emptySlot) return { error: 'Room is full.' };
@@ -113,8 +115,9 @@ export function joinRoom(
   emptySlot.status = 'human';
   emptySlot.playerId = playerId;
   emptySlot.playerName = playerName;
-  emptySlot.photoURL = photoURL;
-  emptySlot.isPlus = isPlus;
+  emptySlot.photoURL = opts.photoURL;
+  emptySlot.isPlus = opts.isPlus;
+  emptySlot.username = opts.username;
   room.socketMap.set(playerId, socketId);
   room.lobby.isStartable = isRoomStartable(room);
 
@@ -138,6 +141,7 @@ export function switchTeam(roomCode: string, playerId: PlayerId): { success: boo
   targetSlot.playerName = currentSlot.playerName;
   targetSlot.photoURL = currentSlot.photoURL;
   targetSlot.isPlus = currentSlot.isPlus;
+  targetSlot.username = currentSlot.username;
 
   // Empty old slot
   currentSlot.status = 'empty';
@@ -145,6 +149,7 @@ export function switchTeam(roomCode: string, playerId: PlayerId): { success: boo
   currentSlot.playerName = undefined;
   currentSlot.photoURL = undefined;
   currentSlot.isPlus = undefined;
+  currentSlot.username = undefined;
 
   room.lobby.isStartable = isRoomStartable(room);
   return { success: true, lobby: room.lobby };
@@ -163,14 +168,17 @@ export function swapPlayers(roomCode: string, playerAId: PlayerId, playerBId: Pl
   const tmpName = slotA.playerName;
   const tmpPhoto = slotA.photoURL;
   const tmpPlus = slotA.isPlus;
+  const tmpUsername = slotA.username;
   slotA.playerId = slotB.playerId;
   slotA.playerName = slotB.playerName;
   slotA.photoURL = slotB.photoURL;
   slotA.isPlus = slotB.isPlus;
+  slotA.username = slotB.username;
   slotB.playerId = tmpId;
   slotB.playerName = tmpName;
   slotB.photoURL = tmpPhoto;
   slotB.isPlus = tmpPlus;
+  slotB.username = tmpUsername;
 
   // Update socketMap entries
   const socketA = room.socketMap.get(playerAId);
@@ -251,6 +259,7 @@ export function removePlayer(roomCode: string, playerId: PlayerId): { lobby: Lob
     slot.playerName = undefined;
     slot.photoURL = undefined;
     slot.isPlus = undefined;
+    slot.username = undefined;
   }
   room.socketMap.delete(playerId);
   room.lobby.isStartable = isRoomStartable(room);
@@ -281,6 +290,27 @@ export function removePlayer(roomCode: string, playerId: PlayerId): { lobby: Lob
 
 export function isRoomStartable(room: Room): boolean {
   return room.lobby.slots.every(s => s.status !== 'empty');
+}
+
+export function getRoomSummaries(): RoomSummary[] {
+  const result: RoomSummary[] = [];
+  for (const room of rooms.values()) {
+    if (room.game) continue;
+    const hostSlot = room.lobby.slots.find(s => s.playerId === room.lobby.hostId);
+    const filledCount = room.lobby.slots.filter(s => s.status !== 'empty').length;
+    result.push({
+      roomCode: room.roomCode,
+      roomName: room.lobby.roomName,
+      hostName: hostSlot?.playerName ?? 'Unknown',
+      hostUsername: hostSlot?.username,
+      hostPhotoURL: hostSlot?.photoURL,
+      playerCount: filledCount,
+      maxPlayers: room.lobby.playerCount,
+      difficulty: room.lobby.difficulty,
+      isFull: room.lobby.slots.every(s => s.status !== 'empty'),
+    });
+  }
+  return result;
 }
 
 export function initRevealCredits(room: Room): void {

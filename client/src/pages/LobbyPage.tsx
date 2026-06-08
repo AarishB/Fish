@@ -132,6 +132,9 @@ function SlotRow({
             <div className="truncate">
               {nameEl}
             </div>
+            {slot.username && slot.status === 'human' && (
+              <div className="text-xs text-gray-500 font-mono">@{slot.username}</div>
+            )}
             <div className="flex flex-col gap-0.5 mt-0.5">
               {kickVoteInfo && (
                 <span className="text-yellow-400 text-xs">👎 {kickVoteInfo.votes}/{kickVoteInfo.needed} to kick</span>
@@ -289,8 +292,13 @@ export default function LobbyPage() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold font-card text-white mb-3">Lobby</h1>
-          <div className="flex items-center justify-center gap-3">
+          <h1 className="text-4xl font-bold font-card text-white mb-1">
+            {lobby.roomName ?? 'Lobby'}
+          </h1>
+          {lobby.roomName && (
+            <p className="text-gray-500 text-sm mb-2">Lobby</p>
+          )}
+          <div className="flex items-center justify-center gap-3 mt-2">
             <div className="bg-gray-900 border border-gray-600 rounded-2xl px-6 py-2">
               <span className="text-gray-400 text-sm mr-2">Room Code:</span>
               <span className="font-mono text-2xl font-bold text-white tracking-widest">{roomCode}</span>

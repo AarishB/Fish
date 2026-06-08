@@ -300,12 +300,12 @@ export default function GamePage() {
                     className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-bold
                       transition-all active:scale-95
                       ${hasVotedEndGame
-                        ? 'bg-gray-800/60 border-gray-600 text-gray-400 hover:bg-gray-700/60'
+                        ? 'bg-amber-900/40 border-amber-600 text-amber-300 hover:bg-red-900/40 hover:border-red-600 hover:text-red-300'
                         : 'bg-red-950/40 border-red-700 text-red-300 hover:bg-red-900/40'
                       }`}
-                    title={hasVotedEndGame ? 'Withdraw your vote' : 'Vote to end the game early'}
+                    title={hasVotedEndGame ? 'Click to withdraw your vote' : 'Vote to end the game early'}
                   >
-                    {hasVotedEndGame ? '↩ Unvote' : '🏳️ End'} ({endGameVotes?.votes ?? 0}/{humanCount})
+                    {hasVotedEndGame ? '✓ Voted' : '🏳️ End'} ({endGameVotes?.votes ?? 0}/{humanCount})
                   </button>
                 </div>
               </div>

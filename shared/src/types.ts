@@ -64,6 +64,7 @@ export interface PlayerInfo {
   cardCount: number; // only hand-size is public
   photoURL?: string;
   isPlus?: boolean;
+  username?: string;
 }
 
 // ============================================================
@@ -191,6 +192,7 @@ export interface LobbySlot {
   playerName?: string;
   photoURL?: string;
   isPlus?: boolean;
+  username?: string;
   teamId: TeamId;
 }
 
@@ -204,6 +206,7 @@ export interface SwapRequest {
 
 export interface LobbyState {
   roomCode: string;
+  roomName?: string;
   hostId: PlayerId;
   playerCount: number;
   difficulty: GameDifficulty;
@@ -212,4 +215,16 @@ export interface LobbyState {
   isStartable: boolean;
   teamNames: Record<TeamId, string>;
   swapRequests: SwapRequest[];
+}
+
+export interface RoomSummary {
+  roomCode: string;
+  roomName?: string;
+  hostName: string;
+  hostUsername?: string;
+  hostPhotoURL?: string;
+  playerCount: number;
+  maxPlayers: number;
+  difficulty: GameDifficulty;
+  isFull: boolean;
 }

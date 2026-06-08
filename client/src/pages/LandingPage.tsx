@@ -21,9 +21,12 @@ import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
 import { CARD_BACK_DEFS } from '../cardBackDefs';
 import { Button } from '../components/ui/Button';
 import { PlusRing } from '../components/ui/PlusRing';
+import { BrowseRoomsPanel } from '../components/ui/BrowseRoomsPanel';
+import { Leaderboard } from '../components/ui/Leaderboard';
 import type { GameDifficulty } from 'shared';
 
 type Mode = 'auth' | 'home' | 'create' | 'join';
+type JoinTab = 'code' | 'browse';
 
 const PRESET_COUNTS = [4, 6, 8, 10] as const;
 
@@ -96,7 +99,7 @@ const HOW_TO_PLAY = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL } = useAuthStore();
+  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL, username: storedUsername } = useAuthStore();
   const [mode, setMode] = useState<Mode>('auth');
   const [signingIn, setSigningIn] = useState(false);
   const [playerName, setPlayerName] = useState('');
@@ -104,6 +107,8 @@ export default function LandingPage() {
   const [isCustom, setIsCustom] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [roomCode, setRoomCode] = useState('');
+  const [roomName, setRoomName] = useState('');
+  const [joinTab, setJoinTab] = useState<JoinTab>('code');
   const [rulesOpen, setRulesOpen] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -131,7 +136,16 @@ export default function LandingPage() {
     if (!count || count < 4 || count > 14) return;
     setMyIdentity(socket.id ?? '', playerName.trim());
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack, photoURL: storedPhotoURL || undefined, isPlus });
+    emitWhenConnected('create_room', {
+      playerName: playerName.trim(),
+      playerCount: count,
+      difficulty,
+      cardBack,
+      photoURL: storedPhotoURL || undefined,
+      isPlus,
+      username: storedUsername || undefined,
+      roomName: roomName.trim() || undefined,
+    });
   }
 
   function handleSelectPreset(n: number) {
@@ -153,8 +167,18 @@ export default function LandingPage() {
   function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!playerName.trim() || !roomCode.trim()) return;
+    submitJoin(roomCode.trim().toUpperCase());
+  }
+
+  function submitJoin(code: string) {
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase(), photoURL: storedPhotoURL || undefined, isPlus });
+    emitWhenConnected('join_room', {
+      playerName: playerName.trim(),
+      roomCode: code,
+      photoURL: storedPhotoURL || undefined,
+      isPlus,
+      username: storedUsername || undefined,
+    });
   }
 
   return (
@@ -260,7 +284,9 @@ export default function LandingPage() {
                   </PlusRing>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-semibold truncate">{firebaseUser.displayName}</div>
-                    <div className="text-gray-500 text-xs">View profile →</div>
+                    <div className="text-gray-500 text-xs">
+                      {storedUsername ? `@${storedUsername} · ` : ''}View profile →
+                    </div>
                   </div>
                 </button>
               )}
@@ -285,6 +311,18 @@ export default function LandingPage() {
                   maxLength={20}
                   placeholder="Enter your name"
                   autoFocus
+                  className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3
+                    text-white placeholder-gray-500 focus:outline-none focus:border-teamA
+                    transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Room Name <span className="text-gray-600">(optional)</span></label>
+                <input
+                  value={roomName}
+                  onChange={e => setRoomName(e.target.value)}
+                  maxLength={40}
+                  placeholder="e.g. Friday Night Games"
                   className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3
                     text-white placeholder-gray-500 focus:outline-none focus:border-teamA
                     transition-colors"
@@ -537,7 +575,7 @@ export default function LandingPage() {
           )}
 
           {mode === 'join' && (
-            <form onSubmit={handleJoin} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
               <h2 className="text-xl font-bold text-white font-card">Join a Room</h2>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Your Name</label>
@@ -552,30 +590,65 @@ export default function LandingPage() {
                     transition-colors"
                 />
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Room Code</label>
-                <input
-                  value={roomCode}
-                  onChange={e => setRoomCode(e.target.value.toUpperCase())}
-                  maxLength={4}
-                  placeholder="e.g. ABCD"
-                  className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3
-                    text-white placeholder-gray-500 focus:outline-none focus:border-teamA
-                    transition-colors font-mono text-xl tracking-widest uppercase text-center"
-                />
-              </div>
-              <div className="flex gap-3 mt-2">
-                <Button type="button" variant="ghost" onClick={() => setMode('home')}>Back</Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="flex-1"
-                  disabled={!playerName.trim() || roomCode.length < 4}
+
+              {/* Tab switcher */}
+              <div className="flex gap-1 bg-gray-800/50 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => setJoinTab('code')}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors
+                    ${joinTab === 'code' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Join
-                </Button>
+                  🔑 Enter Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJoinTab('browse')}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-colors
+                    ${joinTab === 'browse' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  🔍 Browse Rooms
+                </button>
               </div>
-            </form>
+
+              {joinTab === 'code' && (
+                <form onSubmit={handleJoin} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Room Code</label>
+                    <input
+                      value={roomCode}
+                      onChange={e => setRoomCode(e.target.value.toUpperCase())}
+                      maxLength={4}
+                      placeholder="e.g. ABCD"
+                      className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3
+                        text-white placeholder-gray-500 focus:outline-none focus:border-teamA
+                        transition-colors font-mono text-xl tracking-widest uppercase text-center"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button type="button" variant="ghost" onClick={() => setMode('home')}>Back</Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      className="flex-1"
+                      disabled={!playerName.trim() || roomCode.length < 4}
+                    >
+                      Join
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {joinTab === 'browse' && (
+                <div className="flex flex-col gap-3">
+                  <BrowseRoomsPanel
+                    playerName={playerName}
+                    onJoin={code => { setRoomCode(code); submitJoin(code); }}
+                  />
+                  <Button type="button" variant="ghost" onClick={() => setMode('home')}>← Back</Button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -604,6 +677,9 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+
+        {/* Leaderboard */}
+        <Leaderboard />
 
         {/* Footer */}
         <div className="mt-4 text-center text-xs text-gray-600 flex justify-center gap-4">

@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { useAuthStore } from './store/useAuthStore';
+import { initializeUsername } from './userStats';
 import { useSocket } from './hooks/useSocket';
 import LandingPage from './pages/LandingPage';
 import LobbyPage from './pages/LobbyPage';
@@ -35,7 +36,7 @@ function AppInner() {
 }
 
 export default function App() {
-  const { setUser, setIsPlus, setLoading, setPhotoURL } = useAuthStore();
+  const { setUser, setIsPlus, setLoading, setPhotoURL, setUsername } = useAuthStore();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -51,14 +52,21 @@ export default function App() {
         const snap = await getDoc(doc(db, 'users', user.uid));
         setIsPlus(snap.data()?.isPlus ?? false);
         setPhotoURL(snap.data()?.photoURL ?? user.photoURL ?? '');
+        const usernameVal = snap.data()?.username as string | undefined;
+        if (usernameVal) {
+          setUsername(usernameVal);
+        } else if (snap.exists()) {
+          initializeUsername(user.uid, user.displayName ?? 'user').then(u => setUsername(u)).catch(() => {});
+        }
       } else {
         setIsPlus(false);
         setPhotoURL('');
+        setUsername('');
       }
       setLoading(false);
     });
     return unsubscribe;
-  }, [setUser, setIsPlus, setLoading, setPhotoURL]);
+  }, [setUser, setIsPlus, setLoading, setPhotoURL, setUsername]);
 
   return (
     <BrowserRouter>
