@@ -269,6 +269,29 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Upgrade to Plus */}
+        {!isPlus && (
+          <div className="bg-gray-900/90 border border-amber-500/30 rounded-3xl p-6
+            flex items-center gap-4">
+            <div className="text-3xl">✦</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-bold text-sm">Upgrade to Fish Plus</div>
+              <div className="text-gray-400 text-xs mt-0.5">
+                Premium card designs, Hidden Deck Mode, gold ring &amp; more — $4.99/mo
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/upgrade')}
+              className="flex-shrink-0 px-4 py-2 rounded-xl font-bold text-sm
+                bg-amber-500 hover:bg-amber-400 active:bg-amber-600
+                text-black transition-colors"
+            >
+              Upgrade
+            </button>
+          </div>
+        )}
+
         {/* Sign out */}
         <div className="bg-gray-900/90 border border-gray-700 rounded-3xl p-6">
           {showSignOutConfirm ? (

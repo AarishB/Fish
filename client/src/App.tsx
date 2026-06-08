@@ -10,6 +10,7 @@ import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import EndScreen from './pages/EndScreen';
 import ProfilePage from './pages/ProfilePage';
+import UpgradePage from './pages/UpgradePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import { ToastContainer } from './components/ui/Toast';
@@ -24,6 +25,7 @@ function AppInner() {
         <Route path="/game" element={<GamePage />} />
         <Route path="/end" element={<EndScreen />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/upgrade" element={<UpgradePage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       </Routes>
