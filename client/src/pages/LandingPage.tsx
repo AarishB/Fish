@@ -20,6 +20,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
 import { CARD_BACK_DEFS } from '../cardBackDefs';
 import { Button } from '../components/ui/Button';
+import { PlusRing } from '../components/ui/PlusRing';
 import type { GameDifficulty } from 'shared';
 
 type Mode = 'auth' | 'home' | 'create' | 'join';
@@ -251,10 +252,12 @@ export default function LandingPage() {
                   onClick={() => navigate('/profile')}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors text-left"
                 >
-                  {(storedPhotoURL || firebaseUser.photoURL)
-                    ? <img src={storedPhotoURL || firebaseUser.photoURL!} alt="profile" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
-                    : <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm">👤</div>
-                  }
+                  <PlusRing active={isPlus} padding={2}>
+                    {(storedPhotoURL || firebaseUser.photoURL)
+                      ? <img src={storedPhotoURL || firebaseUser.photoURL!} alt="profile" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                      : <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm">👤</div>
+                    }
+                  </PlusRing>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-semibold truncate">{firebaseUser.displayName}</div>
                     <div className="text-gray-500 text-xs">View profile →</div>
