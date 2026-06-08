@@ -39,15 +39,14 @@ function statLabel(mode: SortMode): string {
 
 export function Leaderboard() {
   const [tab, setTab] = useState<SortMode>('wins');
-  const [entries, setEntries] = useState<LeaderEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetched, setFetched] = useState<Set<SortMode>>(new Set());
+  const [allEntries, setAllEntries] = useState<Partial<Record<SortMode, LeaderEntry[]>>>({});
+  const [loadingTab, setLoadingTab] = useState<SortMode | null>('wins');
 
   useEffect(() => {
-    if (fetched.has(tab)) return;
-    setLoading(true);
+    if (allEntries[tab] !== undefined) return;
+    setLoadingTab(tab);
 
-    const field = tab === 'ratio' ? 'wins' : tab === 'wins' ? 'wins' : 'gamesPlayed';
+    const field = tab === 'ratio' || tab === 'wins' ? 'wins' : 'gamesPlayed';
     const fetchLimit = tab === 'ratio' ? 50 : 10;
     const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(fetchLimit));
 
@@ -73,11 +72,10 @@ export function Leaderboard() {
           .slice(0, 10);
       }
 
-      setEntries(rows);
-      setFetched(prev => new Set([...prev, tab]));
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [tab, fetched]);
+      setAllEntries(prev => ({ ...prev, [tab]: rows }));
+      setLoadingTab(null);
+    }).catch(() => setLoadingTab(null));
+  }, [tab, allEntries]);
 
   return (
     <div className="mt-6 bg-gray-900/60 border border-gray-700 rounded-2xl overflow-hidden">
@@ -105,12 +103,12 @@ export function Leaderboard() {
 
       {/* Rows */}
       <div className="divide-y divide-gray-800/60">
-        {loading ? (
+        {loadingTab === tab ? (
           <div className="py-8 text-center text-gray-500 text-sm animate-pulse">Loading…</div>
-        ) : entries.length === 0 ? (
+        ) : (allEntries[tab] ?? []).length === 0 ? (
           <div className="py-8 text-center text-gray-600 text-sm">No data yet — be the first to play!</div>
         ) : (
-          entries.map((entry, i) => (
+          (allEntries[tab] ?? []).map((entry, i) => (
             <div key={entry.uid} className="flex items-center gap-3 px-4 py-2.5">
               <span className={`w-5 text-xs font-bold text-center shrink-0
                 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-700' : 'text-gray-600'}`}>
