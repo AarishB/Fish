@@ -63,6 +63,7 @@ export interface PlayerInfo {
   isBot: boolean;
   cardCount: number; // only hand-size is public
   photoURL?: string;
+  isPlus?: boolean;
 }
 
 // ============================================================
@@ -189,6 +190,7 @@ export interface LobbySlot {
   playerId?: PlayerId;
   playerName?: string;
   photoURL?: string;
+  isPlus?: boolean;
   teamId: TeamId;
 }
 

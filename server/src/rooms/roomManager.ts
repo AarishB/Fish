@@ -7,16 +7,17 @@ import type {
   GameDifficulty,
   SwapRequest,
 } from 'shared';
-import { getRevealCredits } from 'shared';
+import { getInitialRevealCredits } from 'shared';
 import type { BotState } from '../bot/botBrain';
 
 export interface Room {
   roomCode: string;
   lobby: LobbyState;
   game: GameState | null;
-  socketMap: Map<PlayerId, string>;      // playerId → socket.id
+  socketMap: Map<PlayerId, string>;         // playerId → socket.id
   botStates: Map<PlayerId, BotState>;
-  revealCredits: Map<PlayerId, number>;  // 3 credits per player per game
+  revealCredits: Map<PlayerId, number>;     // current credits remaining per player
+  maxRevealCredits: Map<PlayerId, number>;  // initial credits (for usedSoFar calculation)
   kickVotes: Map<PlayerId, Set<PlayerId>>; // targetId → Set of voter socket IDs
   callSetLock: PlayerId | null;          // playerId currently executing a call set
   teamSwitchVotes: Map<PlayerId, Set<PlayerId>>; // targetId → Set of voter playerIds
@@ -43,11 +44,13 @@ function buildSlots(playerCount: number): LobbySlot[] {
   return slots;
 }
 
-export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue', hostPhotoURL?: string): Room {
+interface CreateRoomOpts { photoURL?: string; isPlus?: boolean }
+
+export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue', opts: CreateRoomOpts = {}): Room {
   const roomCode = generateRoomCode();
   const slots = buildSlots(playerCount);
   // Place host in seat 0 (Team A)
-  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, photoURL: hostPhotoURL, teamId: 'A' };
+  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, photoURL: opts.photoURL, isPlus: opts.isPlus, teamId: 'A' };
 
   const lobby: LobbyState = {
     roomCode,
@@ -68,6 +71,7 @@ export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: str
     socketMap: new Map([[hostId, hostSocketId]]),
     botStates: new Map(),
     revealCredits: new Map(),
+    maxRevealCredits: new Map(),
     kickVotes: new Map(),
     callSetLock: null,
     teamSwitchVotes: new Map(),
@@ -93,6 +97,7 @@ export function joinRoom(
   socketId: string,
   preferredTeam?: TeamId,
   photoURL?: string,
+  isPlus?: boolean,
 ): { slot: LobbySlot; lobby: LobbyState } | { error: string } {
   const room = rooms.get(roomCode);
   if (!room) return { error: 'Room not found.' };
@@ -109,6 +114,7 @@ export function joinRoom(
   emptySlot.playerId = playerId;
   emptySlot.playerName = playerName;
   emptySlot.photoURL = photoURL;
+  emptySlot.isPlus = isPlus;
   room.socketMap.set(playerId, socketId);
   room.lobby.isStartable = isRoomStartable(room);
 
@@ -131,12 +137,14 @@ export function switchTeam(roomCode: string, playerId: PlayerId): { success: boo
   targetSlot.playerId = currentSlot.playerId;
   targetSlot.playerName = currentSlot.playerName;
   targetSlot.photoURL = currentSlot.photoURL;
+  targetSlot.isPlus = currentSlot.isPlus;
 
   // Empty old slot
   currentSlot.status = 'empty';
   currentSlot.playerId = undefined;
   currentSlot.playerName = undefined;
   currentSlot.photoURL = undefined;
+  currentSlot.isPlus = undefined;
 
   room.lobby.isStartable = isRoomStartable(room);
   return { success: true, lobby: room.lobby };
@@ -154,12 +162,15 @@ export function swapPlayers(roomCode: string, playerAId: PlayerId, playerBId: Pl
   const tmpId = slotA.playerId;
   const tmpName = slotA.playerName;
   const tmpPhoto = slotA.photoURL;
+  const tmpPlus = slotA.isPlus;
   slotA.playerId = slotB.playerId;
   slotA.playerName = slotB.playerName;
   slotA.photoURL = slotB.photoURL;
+  slotA.isPlus = slotB.isPlus;
   slotB.playerId = tmpId;
   slotB.playerName = tmpName;
   slotB.photoURL = tmpPhoto;
+  slotB.isPlus = tmpPlus;
 
   // Update socketMap entries
   const socketA = room.socketMap.get(playerAId);
@@ -239,6 +250,7 @@ export function removePlayer(roomCode: string, playerId: PlayerId): { lobby: Lob
     slot.playerId = undefined;
     slot.playerName = undefined;
     slot.photoURL = undefined;
+    slot.isPlus = undefined;
   }
   room.socketMap.delete(playerId);
   room.lobby.isStartable = isRoomStartable(room);
@@ -273,10 +285,12 @@ export function isRoomStartable(room: Room): boolean {
 
 export function initRevealCredits(room: Room): void {
   room.revealCredits.clear();
-  const credits = getRevealCredits(room.lobby.difficulty);
+  room.maxRevealCredits.clear();
   for (const slot of room.lobby.slots) {
     if (slot.status === 'human' && slot.playerId) {
+      const credits = getInitialRevealCredits(room.lobby.difficulty, slot.isPlus ?? false);
       room.revealCredits.set(slot.playerId, credits);
+      room.maxRevealCredits.set(slot.playerId, credits);
     }
   }
 }

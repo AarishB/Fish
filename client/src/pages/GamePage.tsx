@@ -275,14 +275,24 @@ export default function GamePage() {
                       <span className="text-sm font-normal">Reveal</span>
                     </button>
                   )}
-                  {gameView.difficulty === 'normal' && (
+                  {gameView.difficulty === 'normal' && isPlus && (
                     <button
                       disabled
                       className="flex items-center gap-2 px-4 py-3 rounded-xl border-2
-                        opacity-30 cursor-not-allowed border-gray-700 text-gray-500 text-base font-bold"
-                      title="Payment not set up yet"
+                        opacity-40 cursor-not-allowed border-amber-700 text-amber-500 text-base font-bold"
+                      title="Coming soon — purchasing extra reveals will be available once payments are live"
                     >
-                      💳 <span className="text-sm font-normal">Buy More Reveals</span>
+                      💳 <span className="text-sm font-normal">Buy Reveals</span>
+                    </button>
+                  )}
+                  {gameView.difficulty === 'normal' && !isPlus && revealCredits <= 0 && (
+                    <button
+                      disabled
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl border-2
+                        opacity-40 cursor-not-allowed border-gray-700 text-gray-500 text-base font-bold"
+                      title="Plus members get 5 reveals and can buy more"
+                    >
+                      ✦ <span className="text-sm font-normal">Plus only</span>
                     </button>
                   )}
                   <button

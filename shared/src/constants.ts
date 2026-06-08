@@ -29,5 +29,12 @@ export const REVEAL_CREDITS_PER_GAME = 3;
 export function getRevealCredits(difficulty: GameDifficulty): number {
   if (difficulty === 'easy') return 99; // effectively infinite, shown as ∞ in UI
   if (difficulty === 'hard') return 0;
-  return 3; // normal
+  return 3; // normal / hidden_deck base
+}
+
+// Plus users get 5 reveals in modes that have reveals (not hard/easy).
+export function getInitialRevealCredits(difficulty: GameDifficulty, isPlus: boolean): number {
+  if (difficulty === 'easy') return 99;
+  if (difficulty === 'hard') return 0;
+  return isPlus ? 5 : 3;
 }

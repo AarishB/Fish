@@ -95,7 +95,7 @@ const HOW_TO_PLAY = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL } = useAuthStore();
+  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL, isPlus } = useAuthStore();
   const [mode, setMode] = useState<Mode>('auth');
   const [signingIn, setSigningIn] = useState(false);
   const [playerName, setPlayerName] = useState('');
@@ -130,7 +130,7 @@ export default function LandingPage() {
     if (!count || count < 4 || count > 14) return;
     setMyIdentity(socket.id ?? '', playerName.trim());
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack, photoURL: storedPhotoURL || undefined });
+    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack, photoURL: storedPhotoURL || undefined, isPlus });
   }
 
   function handleSelectPreset(n: number) {
@@ -153,7 +153,7 @@ export default function LandingPage() {
     e.preventDefault();
     if (!playerName.trim() || !roomCode.trim()) return;
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase(), photoURL: storedPhotoURL || undefined });
+    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase(), photoURL: storedPhotoURL || undefined, isPlus });
   }
 
   return (

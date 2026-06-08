@@ -8,7 +8,7 @@ const FEATURES = [
   { icon: '✦', title: 'Gold Profile Ring', desc: 'Animated gold ring around your avatar everywhere it appears' },
   { icon: '🥋', title: 'Belt Progression', desc: 'Track your rank from White to Black belt across all games' },
   { icon: '📊', title: 'Full Stats', desc: 'Win/loss ratio, games played, games ended early, and more' },
-  { icon: '👁', title: 'Extra Reveals', desc: 'Purchase additional ask-history reveals mid-game to gain the edge' },
+  { icon: '👁', title: 'More Reveals', desc: '5 reveals per game in Normal mode (free players get 3) + buy extra mid-game' },
 ];
 
 export default function UpgradePage() {

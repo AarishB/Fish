@@ -25,6 +25,7 @@ export function initializeGame(lobby: LobbyState): GameState {
     isBot: slot.status === 'bot',
     cardCount: hands[slot.playerId!]?.length ?? 0,
     photoURL: slot.photoURL,
+    isPlus: slot.isPlus,
   }));
 
   const firstPlayer = players[0];

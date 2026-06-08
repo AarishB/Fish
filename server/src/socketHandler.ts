@@ -52,7 +52,7 @@ export function registerSocketHandlers(io: Server): void {
     // Lobby Events
     // ----------------------------------------------------------
 
-    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack, photoURL }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string; photoURL?: string }) => {
+    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack, photoURL, isPlus }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string; photoURL?: string; isPlus?: boolean }) => {
       if (!Number.isInteger(playerCount) || playerCount < 4 || playerCount > 14) {
         socket.emit('error', { message: 'Player count must be between 4 and 14.' });
         return;
@@ -62,14 +62,14 @@ export function registerSocketHandlers(io: Server): void {
       const validBacks = ['blue', 'green', 'crimson', 'midnight', 'gold', 'obsidian', 'violet', 'ocean'];
       const safeCardBack = cardBack && validBacks.includes(cardBack) ? cardBack : 'blue';
       const playerId = socket.id;
-      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack, photoURL);
+      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack, { photoURL, isPlus });
       socketToPlayer.set(socket.id, { playerId, roomCode: room.roomCode });
       socket.join(room.roomCode);
       socket.emit('room_created', { roomCode: room.roomCode, lobby: room.lobby });
     });
 
-    socket.on('join_room', ({ roomCode, playerName, preferredTeam, photoURL }: { roomCode: string; playerName: string; preferredTeam?: TeamId; photoURL?: string }) => {
-      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, preferredTeam, photoURL);
+    socket.on('join_room', ({ roomCode, playerName, preferredTeam, photoURL, isPlus }: { roomCode: string; playerName: string; preferredTeam?: TeamId; photoURL?: string; isPlus?: boolean }) => {
+      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, preferredTeam, photoURL, isPlus);
       if ('error' in result) {
         socket.emit('error', { message: result.error });
         return;
@@ -514,7 +514,7 @@ export function registerSocketHandlers(io: Server): void {
       }
 
       // Determine how many asks to show: each use reveals one more (cumulative)
-      const maxCredits = getRevealCredits(room.lobby.difficulty);
+      const maxCredits = room.maxRevealCredits.get(playerId) ?? getRevealCredits(room.lobby.difficulty);
       const usedSoFar = maxCredits - credits; // 0 = first use, 1 = second, etc.
       const numToShow = usedSoFar + 1;
       const asks = room.game.askHistory.slice(-numToShow);
