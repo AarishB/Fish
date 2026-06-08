@@ -75,7 +75,7 @@ function CountryDropdown({ value, onChange }: { readonly value: string; readonly
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, setIsPlus } = useAuthStore();
+  const { user, setIsPlus, setPhotoURL: setGlobalPhotoURL } = useAuthStore();
   const isPlus = usePlusStatus();
 
   const [profile, setProfile] = useState<UserDoc | null>(null);
@@ -147,7 +147,7 @@ export default function ProfilePage() {
       {showCropModal && (
         <ImageCropModal
           uid={user.uid}
-          onSaved={url => { setPhotoURL(url); setShowCropModal(false); }}
+          onSaved={url => { setPhotoURL(url); setGlobalPhotoURL(url); setShowCropModal(false); }}
           onCancel={() => setShowCropModal(false)}
         />
       )}

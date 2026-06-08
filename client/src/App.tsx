@@ -35,7 +35,7 @@ function AppInner() {
 }
 
 export default function App() {
-  const { setUser, setIsPlus, setLoading } = useAuthStore();
+  const { setUser, setIsPlus, setLoading, setPhotoURL } = useAuthStore();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -50,13 +50,15 @@ export default function App() {
       if (user) {
         const snap = await getDoc(doc(db, 'users', user.uid));
         setIsPlus(snap.data()?.isPlus ?? false);
+        setPhotoURL(snap.data()?.photoURL ?? user.photoURL ?? '');
       } else {
         setIsPlus(false);
+        setPhotoURL('');
       }
       setLoading(false);
     });
     return unsubscribe;
-  }, [setUser, setIsPlus, setLoading]);
+  }, [setUser, setIsPlus, setLoading, setPhotoURL]);
 
   return (
     <BrowserRouter>

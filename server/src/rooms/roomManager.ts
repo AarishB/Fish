@@ -43,11 +43,11 @@ function buildSlots(playerCount: number): LobbySlot[] {
   return slots;
 }
 
-export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue'): Room {
+export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: string, playerCount: number, difficulty: GameDifficulty, cardBack = 'blue', hostPhotoURL?: string): Room {
   const roomCode = generateRoomCode();
   const slots = buildSlots(playerCount);
   // Place host in seat 0 (Team A)
-  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, teamId: 'A' };
+  slots[0] = { seatIndex: 0, status: 'human', playerId: hostId, playerName: hostName, photoURL: hostPhotoURL, teamId: 'A' };
 
   const lobby: LobbyState = {
     roomCode,
@@ -91,7 +91,8 @@ export function joinRoom(
   playerId: PlayerId,
   playerName: string,
   socketId: string,
-  preferredTeam?: TeamId
+  preferredTeam?: TeamId,
+  photoURL?: string,
 ): { slot: LobbySlot; lobby: LobbyState } | { error: string } {
   const room = rooms.get(roomCode);
   if (!room) return { error: 'Room not found.' };
@@ -107,6 +108,7 @@ export function joinRoom(
   emptySlot.status = 'human';
   emptySlot.playerId = playerId;
   emptySlot.playerName = playerName;
+  emptySlot.photoURL = photoURL;
   room.socketMap.set(playerId, socketId);
   room.lobby.isStartable = isRoomStartable(room);
 
@@ -128,11 +130,13 @@ export function switchTeam(roomCode: string, playerId: PlayerId): { success: boo
   targetSlot.status = 'human';
   targetSlot.playerId = currentSlot.playerId;
   targetSlot.playerName = currentSlot.playerName;
+  targetSlot.photoURL = currentSlot.photoURL;
 
   // Empty old slot
   currentSlot.status = 'empty';
   currentSlot.playerId = undefined;
   currentSlot.playerName = undefined;
+  currentSlot.photoURL = undefined;
 
   room.lobby.isStartable = isRoomStartable(room);
   return { success: true, lobby: room.lobby };
@@ -149,10 +153,13 @@ export function swapPlayers(roomCode: string, playerAId: PlayerId, playerBId: Pl
   // Swap player identity between the two team slots (teamId stays fixed to seat)
   const tmpId = slotA.playerId;
   const tmpName = slotA.playerName;
+  const tmpPhoto = slotA.photoURL;
   slotA.playerId = slotB.playerId;
   slotA.playerName = slotB.playerName;
+  slotA.photoURL = slotB.photoURL;
   slotB.playerId = tmpId;
   slotB.playerName = tmpName;
+  slotB.photoURL = tmpPhoto;
 
   // Update socketMap entries
   const socketA = room.socketMap.get(playerAId);
@@ -231,6 +238,7 @@ export function removePlayer(roomCode: string, playerId: PlayerId): { lobby: Lob
     slot.status = 'empty';
     slot.playerId = undefined;
     slot.playerName = undefined;
+    slot.photoURL = undefined;
   }
   room.socketMap.delete(playerId);
   room.lobby.isStartable = isRoomStartable(room);

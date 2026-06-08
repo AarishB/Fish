@@ -117,9 +117,14 @@ function SlotRow({
       <div className="flex items-start justify-between gap-2">
         {/* Avatar + info */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${avatarClass(slot, isSelf)}`}>
-            {avatarLabel(slot)}
-          </div>
+          {slot.photoURL && slot.status === 'human'
+            ? <img src={slot.photoURL} alt="" className="w-10 h-10 shrink-0 rounded-full object-cover" referrerPolicy="no-referrer" />
+            : (
+              <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${avatarClass(slot, isSelf)}`}>
+                {avatarLabel(slot)}
+              </div>
+            )
+          }
           <div className="min-w-0">
             <div className="truncate">
               {nameEl}

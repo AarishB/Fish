@@ -25,16 +25,24 @@ const teamGlow: Record<string, string> = {
 };
 
 function Avatar({ player, size = 'md' }: Readonly<{ player: PlayerInfo; size?: 'sm' | 'md' }>) {
-  const initials = player.isBot
-    ? '🤖'
-    : player.name.slice(0, 2).toUpperCase();
+  const sz = size === 'sm' ? 'w-8 h-8 text-sm' : 'w-12 h-12 text-base';
 
+  if (player.photoURL && !player.isBot) {
+    return (
+      <img
+        src={player.photoURL}
+        alt={player.name}
+        referrerPolicy="no-referrer"
+        className={`${sz} rounded-full object-cover border-2 ${teamColors[player.teamId]}`}
+      />
+    );
+  }
+
+  const initials = player.isBot ? '🤖' : player.name.slice(0, 2).toUpperCase();
   const bgColors: Record<string, string> = {
     A: 'bg-teamA/20 text-teamALight',
     B: 'bg-teamB/20 text-teamBLight',
   };
-
-  const sz = size === 'sm' ? 'w-8 h-8 text-sm' : 'w-12 h-12 text-base';
 
   return (
     <div

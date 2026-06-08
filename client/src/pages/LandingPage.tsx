@@ -95,7 +95,7 @@ const HOW_TO_PLAY = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user: firebaseUser, loading: authLoading } = useAuthStore();
+  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL } = useAuthStore();
   const [mode, setMode] = useState<Mode>('auth');
   const [signingIn, setSigningIn] = useState(false);
   const [playerName, setPlayerName] = useState('');
@@ -130,7 +130,7 @@ export default function LandingPage() {
     if (!count || count < 4 || count > 14) return;
     setMyIdentity(socket.id ?? '', playerName.trim());
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack });
+    emitWhenConnected('create_room', { playerName: playerName.trim(), playerCount: count, difficulty, cardBack, photoURL: storedPhotoURL || undefined });
   }
 
   function handleSelectPreset(n: number) {
@@ -153,7 +153,7 @@ export default function LandingPage() {
     e.preventDefault();
     if (!playerName.trim() || !roomCode.trim()) return;
     useGameStore.setState({ myPlayerName: playerName.trim() });
-    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase() });
+    emitWhenConnected('join_room', { playerName: playerName.trim(), roomCode: roomCode.trim().toUpperCase(), photoURL: storedPhotoURL || undefined });
   }
 
   return (
@@ -251,8 +251,8 @@ export default function LandingPage() {
                   onClick={() => navigate('/profile')}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors text-left"
                 >
-                  {firebaseUser.photoURL
-                    ? <img src={firebaseUser.photoURL} alt="profile" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                  {(storedPhotoURL || firebaseUser.photoURL)
+                    ? <img src={storedPhotoURL || firebaseUser.photoURL!} alt="profile" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
                     : <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm">👤</div>
                   }
                   <div className="flex-1 min-w-0">

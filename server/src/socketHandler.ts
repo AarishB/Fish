@@ -52,7 +52,7 @@ export function registerSocketHandlers(io: Server): void {
     // Lobby Events
     // ----------------------------------------------------------
 
-    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string }) => {
+    socket.on('create_room', ({ playerName, playerCount, difficulty, cardBack, photoURL }: { playerName: string; playerCount: number; difficulty: GameDifficulty; cardBack?: string; photoURL?: string }) => {
       if (!Number.isInteger(playerCount) || playerCount < 4 || playerCount > 14) {
         socket.emit('error', { message: 'Player count must be between 4 and 14.' });
         return;
@@ -62,14 +62,14 @@ export function registerSocketHandlers(io: Server): void {
       const validBacks = ['blue', 'green', 'crimson', 'midnight', 'gold', 'obsidian', 'violet', 'ocean'];
       const safeCardBack = cardBack && validBacks.includes(cardBack) ? cardBack : 'blue';
       const playerId = socket.id;
-      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack);
+      const room = createRoom(socket.id, playerId, playerName, playerCount, safeDifficulty, safeCardBack, photoURL);
       socketToPlayer.set(socket.id, { playerId, roomCode: room.roomCode });
       socket.join(room.roomCode);
       socket.emit('room_created', { roomCode: room.roomCode, lobby: room.lobby });
     });
 
-    socket.on('join_room', ({ roomCode, playerName, preferredTeam }: { roomCode: string; playerName: string; preferredTeam?: TeamId }) => {
-      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, preferredTeam);
+    socket.on('join_room', ({ roomCode, playerName, preferredTeam, photoURL }: { roomCode: string; playerName: string; preferredTeam?: TeamId; photoURL?: string }) => {
+      const result = joinRoom(roomCode.toUpperCase(), socket.id, playerName, socket.id, preferredTeam, photoURL);
       if ('error' in result) {
         socket.emit('error', { message: result.error });
         return;

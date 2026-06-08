@@ -17,8 +17,6 @@ interface Props {
   readonly onCancel: () => void;
 }
 
-// Extract the crop region to a 300×300 JPEG blob.
-// crop values are in displayed-image pixels.
 function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob> {
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -29,10 +27,8 @@ function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob>
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(
     image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
+    crop.x * scaleX, crop.y * scaleY,
+    crop.width * scaleX, crop.height * scaleY,
     0, 0, 300, 300,
   );
   return new Promise((resolve, reject) =>
@@ -44,8 +40,6 @@ function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob>
   );
 }
 
-// Convert a %-based crop to pixel values so we can preview/save without
-// requiring the user to drag the crop handle first.
 function percentCropToPixels(crop: Crop, imgEl: HTMLImageElement): PixelCrop {
   const { width, height } = imgEl;
   return {
@@ -61,7 +55,7 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const [zoom, setZoom] = useState(80); // crop width as % of image (lower = more zoomed in)
+  const [zoom, setZoom] = useState(80);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
@@ -75,7 +69,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
     const reader = new FileReader();
     reader.addEventListener('load', () => setImgSrc(reader.result?.toString() ?? ''));
     reader.readAsDataURL(file);
-    // Reset input so the same file can be re-selected
     e.target.value = '';
   }
 
@@ -86,11 +79,9 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
       width, height,
     );
     setCrop(c);
-    // Derive completedCrop immediately so Save is enabled even without dragging
     setCompletedCrop(percentCropToPixels(c, e.currentTarget));
   }, [zoom]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When the zoom slider changes, recenter the crop at the new size
   function handleZoom(newZoom: number) {
     setZoom(newZoom);
     if (!imgRef.current) return;
@@ -103,7 +94,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
     setCompletedCrop(percentCropToPixels(c, imgRef.current));
   }
 
-  // Keep completedCrop in sync whenever the % crop changes (user dragging)
   useEffect(() => {
     if (!crop || !imgRef.current || crop.unit !== '%') return;
     setCompletedCrop(percentCropToPixels(crop, imgRef.current));
@@ -119,13 +109,19 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
     try {
       const blob = await getCroppedBlob(imgRef.current, completedCrop);
       const storageRef = ref(storage, `profilePictures/${uid}`);
-      await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+
+      const uploadPromise = uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Upload timed out — check your connection.')), 15_000),
+      );
+      await Promise.race([uploadPromise, timeout]);
+
       const url = await getDownloadURL(storageRef);
       await updateDoc(doc(db, 'users', uid), { photoURL: url });
       onSaved(url);
     } catch (err) {
       console.error('Upload failed', err);
-      setError('Upload failed — check your connection and try again.');
+      setError(err instanceof Error ? err.message : 'Upload failed — check your connection and try again.');
       setSaving(false);
     }
   }
@@ -135,7 +131,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
       <div className="bg-gray-900 border border-gray-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4">
         <h2 className="text-lg font-bold text-white">Update Profile Picture</h2>
 
-        {/* File picker */}
         <input
           ref={fileInputRef}
           type="file"
@@ -154,7 +149,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
 
         {imgSrc && (
           <>
-            {/* Crop editor */}
             <div className="flex justify-center">
               <ReactCrop
                 crop={crop}
@@ -175,7 +169,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
               </ReactCrop>
             </div>
 
-            {/* Zoom slider */}
             <div className="flex items-center gap-3">
               <span className="text-gray-400 text-sm select-none">🔍−</span>
               <input
@@ -193,7 +186,6 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
               Drag slider to zoom · drag the circle to reposition
             </p>
 
-            {/* Live circular preview */}
             {completedCrop && imgRef.current && (
               <div className="flex flex-col items-center gap-1">
                 <span className="text-xs text-gray-500 uppercase tracking-wide">Preview</span>
@@ -203,13 +195,12 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
           </>
         )}
 
-        {/* Error message */}
         {error && (
           <p className="text-red-400 text-xs text-center">{error}</p>
         )}
 
         <div className="flex gap-3">
-          <Button variant="ghost" onClick={onCancel} className="flex-1" disabled={saving}>
+          <Button variant="ghost" onClick={onCancel} className="flex-1">
             Cancel
           </Button>
           <Button
@@ -226,29 +217,33 @@ export function ImageCropModal({ uid, onSaved, onCancel }: Props) {
   );
 }
 
-// Renders a 80×80 circular preview of the current crop selection.
-// crop is in displayed-image pixels — we just need to scale those to fit 80px.
+// Canvas-based circular preview — matches exactly what getCroppedBlob will save.
 function CropPreview({ image, crop }: { readonly image: HTMLImageElement; readonly crop: PixelCrop }) {
-  const previewSize = 80;
-  if (crop.width === 0) return null;
-  const scale = previewSize / crop.width;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || crop.width === 0) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    ctx.clearRect(0, 0, 80, 80);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      image,
+      crop.x * scaleX, crop.y * scaleY,
+      crop.width * scaleX, crop.height * scaleY,
+      0, 0, 80, 80,
+    );
+  }, [image, crop]);
 
   return (
-    <div
-      className="rounded-full overflow-hidden border-2 border-white/20 bg-gray-800"
-      style={{ width: previewSize, height: previewSize, flexShrink: 0 }}
-    >
-      <img
-        src={image.src}
-        alt="preview"
-        style={{
-          width: image.width * scale,
-          height: image.height * scale,
-          marginLeft: -crop.x * scale,
-          marginTop: -crop.y * scale,
-          display: 'block',
-        }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={80}
+      height={80}
+      className="rounded-full border-2 border-white/20"
+    />
   );
 }
