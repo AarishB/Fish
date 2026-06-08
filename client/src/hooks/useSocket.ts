@@ -82,10 +82,10 @@ export function useSocket() {
     });
 
     // ------ Game Start ------
-    socket.on('game_started', ({ view }: { view: ClientGameView }) => {
+    socket.on('game_started', ({ view, revealCredits }: { view: ClientGameView; revealCredits: number }) => {
       store.setMyIdentity(socket.id ?? '', store.myPlayerName ?? 'You');
       store.setGameView(view);
-      store.setRevealCredits(3);
+      store.setRevealCredits(revealCredits);
       navigate(`/game`);
     });
 

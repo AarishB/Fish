@@ -355,7 +355,8 @@ export function registerSocketHandlers(io: Server): void {
         const socketId = room.socketMap.get(player.id);
         if (socketId) {
           const view = buildClientView(room.game, player.id);
-          io.to(socketId).emit('game_started', { view });
+          const revealCredits = room.revealCredits.get(player.id) ?? 0;
+          io.to(socketId).emit('game_started', { view, revealCredits });
         }
       }
 
