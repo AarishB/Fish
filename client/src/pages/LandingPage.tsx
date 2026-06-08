@@ -95,7 +95,7 @@ const HOW_TO_PLAY = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL, isPlus } = useAuthStore();
+  const { user: firebaseUser, loading: authLoading, photoURL: storedPhotoURL } = useAuthStore();
   const [mode, setMode] = useState<Mode>('auth');
   const [signingIn, setSigningIn] = useState(false);
   const [playerName, setPlayerName] = useState('');
