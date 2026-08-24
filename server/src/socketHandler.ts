@@ -9,6 +9,7 @@ import type {
   GameState,
   GameDifficulty,
   SwapRequest,
+  ChatMessage,
 } from 'shared';
 import {
   GHOST_PLAYER_ID,
@@ -38,6 +39,7 @@ import {
   addSwapRequest,
   removeSwapRequest,
   getRoomSummaries,
+  addChatMessage,
 } from './rooms/roomManager';
 import { initializeGame, buildClientView } from './game/gameManager';
 import { createBotState, updateBotState, removeSetFromBotState } from './bot/botBrain';
@@ -528,6 +530,30 @@ export function registerSocketHandlers(io: Server): void {
 
       room.revealCredits.set(playerId, credits - 1);
       socket.emit('reveal_response', { asks, creditsRemaining: credits - 1 });
+    });
+
+    // ----------------------------------------------------------
+    // Chat
+    // ----------------------------------------------------------
+
+    socket.on('chat_send', ({ roomCode, text }: { roomCode: string; text: string }) => {
+      const room = getRoom(roomCode);
+      if (!room) return;
+      const trimmed = (text ?? '').trim().slice(0, 500);
+      if (!trimmed) return;
+
+      const slot = room.lobby.slots.find(s => s.playerId === socket.id);
+      const playerName = slot?.playerName ?? 'Player';
+
+      const message: ChatMessage = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        playerId: socket.id,
+        playerName,
+        text: trimmed,
+        timestamp: Date.now(),
+      };
+      addChatMessage(roomCode, message);
+      io.to(roomCode).emit('chat_message', { message });
     });
 
     // ----------------------------------------------------------

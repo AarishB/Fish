@@ -7,6 +7,7 @@ import type {
   GameDifficulty,
   SwapRequest,
   RoomSummary,
+  ChatMessage,
 } from 'shared';
 import { getInitialRevealCredits } from 'shared';
 import type { BotState } from '../bot/botBrain';
@@ -23,7 +24,10 @@ export interface Room {
   callSetLock: PlayerId | null;          // playerId currently executing a call set
   teamSwitchVotes: Map<PlayerId, Set<PlayerId>>; // targetId → Set of voter playerIds
   endGameVotes: Set<PlayerId>;           // human playerIds who voted to end game
+  chatLog: ChatMessage[];
 }
+
+const MAX_CHAT_LOG = 200;
 
 const rooms = new Map<string, Room>();
 
@@ -78,6 +82,7 @@ export function createRoom(hostSocketId: string, hostId: PlayerId, hostName: str
     callSetLock: null,
     teamSwitchVotes: new Map(),
     endGameVotes: new Set(),
+    chatLog: [],
   };
 
   rooms.set(roomCode, room);
@@ -311,6 +316,14 @@ export function getRoomSummaries(): RoomSummary[] {
     });
   }
   return result;
+}
+
+export function addChatMessage(roomCode: string, message: ChatMessage): ChatMessage | null {
+  const room = rooms.get(roomCode);
+  if (!room) return null;
+  room.chatLog.push(message);
+  if (room.chatLog.length > MAX_CHAT_LOG) room.chatLog.shift();
+  return message;
 }
 
 export function initRevealCredits(room: Room): void {

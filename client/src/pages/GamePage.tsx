@@ -13,6 +13,7 @@ import { CallSetModal } from '../components/modals/CallSetModal';
 import { CounterSetModal } from '../components/modals/CounterSetModal';
 import { RevealModal } from '../components/modals/RevealModal';
 import { PassTurnModal } from '../components/modals/PassTurnModal';
+import { ChatPanel } from '../components/chat/ChatPanel';
 import { AskAnnouncementOverlay } from '../components/game/AskAnnouncementOverlay';
 import { CallSetSpectatorOverlay } from '../components/game/CallSetSpectatorOverlay';
 import { CallSetResultOverlay } from '../components/game/CallSetResultOverlay';
@@ -348,6 +349,8 @@ export default function GamePage() {
       {passTurnCandidates && (
         <PassTurnModal candidates={passTurnCandidates} onClose={closePassTurnModal} />
       )}
+
+      <ChatPanel />
     </div>
   );
 }

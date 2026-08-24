@@ -217,6 +217,18 @@ export interface LobbyState {
   swapRequests: SwapRequest[];
 }
 
+// ============================================================
+// Chat
+// ============================================================
+
+export interface ChatMessage {
+  id: string;
+  playerId: PlayerId;
+  playerName: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface RoomSummary {
   roomCode: string;
   roomName?: string;

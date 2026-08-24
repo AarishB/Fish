@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ClientGameView, LobbyState, AskRecord } from 'shared';
+import type { ClientGameView, LobbyState, AskRecord, ChatMessage } from 'shared';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
+import { useChatStore } from '../store/useChatStore';
 import { useSettingsStore, type CardBack } from '../store/useSettingsStore';
 import { auth } from '../firebase';
 import { recordGameResult } from '../userStats';
@@ -29,6 +30,7 @@ export function useSocket() {
       store.setRoomCode(roomCode);
       store.updateLobby(lobby);
       syncCardBack(lobby);
+      useChatStore.getState().clearMessages();
       navigate(`/lobby/${roomCode}`);
     });
 
@@ -37,6 +39,7 @@ export function useSocket() {
       store.setRoomCode(roomCode);
       store.updateLobby(lobby);
       syncCardBack(lobby);
+      useChatStore.getState().clearMessages();
       navigate(`/lobby/${roomCode}`);
     });
 
@@ -51,6 +54,7 @@ export function useSocket() {
 
     socket.on('kicked', ({ message }: { message: string }) => {
       store.addToast(message, 'error');
+      useChatStore.getState().clearMessages();
       navigate('/');
     });
 
@@ -78,7 +82,13 @@ export function useSocket() {
     });
 
     socket.on('left_lobby', () => {
+      useChatStore.getState().clearMessages();
       navigate('/');
+    });
+
+    // ------ Chat ------
+    socket.on('chat_message', ({ message }: { message: ChatMessage }) => {
+      useChatStore.getState().addMessage(message);
     });
 
     // ------ Game Start ------
@@ -252,6 +262,7 @@ export function useSocket() {
       socket.off('team_switch_vote_updated');
       socket.off('swap_requested');
       socket.off('left_lobby');
+      socket.off('chat_message');
       socket.off('end_game_vote_updated');
       socket.off('unvote_end_game');
       socket.off('game_started');
